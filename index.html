@@ -373,6 +373,53 @@
   .theme-card .tname { font-size: 12px; font-weight: 700; color: #fff; text-shadow: 1px 1px 0 #000; }
   .mini-bubble { font-size: 11px; padding: 3px 8px; border-radius: 7px; border: 2px solid; font-weight: 700; }
   .mini-box { align-self: stretch; font-size: 11px; padding: 5px 7px; border-radius: 5px; border: 2px solid; }
+  /* Projects: header controls, menu, New Project dialog */
+  #newProjectBtn { font-weight: 600; }
+  .save-status { font-size: 12px; color: var(--muted); min-width: 90px; }
+  .save-status.ok { color: var(--ok); }
+  .save-status.warn { color: var(--warn); }
+  .menu-wrap { position: relative; }
+  .menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; min-width: 230px; display: flex; flex-direction: column; gap: 2px;
+    background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 6px; box-shadow: 0 12px 30px rgba(0,0,0,.45); }
+  .menu[hidden] { display: none; }
+  .menu button { background: transparent; border: 0; text-align: left; padding: 7px 10px; border-radius: 6px; }
+  .menu button:hover:not(:disabled) { background: #252c3a; }
+  .menu button:disabled { opacity: .4; cursor: default; }
+  .menu hr { border: 0; border-top: 1px solid var(--line); margin: 4px 0; }
+  dialog.dlg { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 14px; padding: 20px;
+    width: min(580px, calc(100vw - 32px)); box-shadow: 0 30px 80px rgba(0,0,0,.6); }
+  dialog.dlg::backdrop { background: rgba(5,7,12,.65); }
+  .dlg h2 { margin: 0 0 6px; font-size: 18px; }
+  .dlg-label { display: block; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin: 14px 0 6px; }
+  .dlg input[type=text] { display: block; width: 100%; margin-top: 6px; font: 15px system-ui, sans-serif; color: var(--text); background: #0f131b;
+    border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; text-transform: none; letter-spacing: 0; }
+  .tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .tpl { position: relative; display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); cursor: pointer; }
+  .tpl input { position: absolute; opacity: 0; pointer-events: none; }
+  .tpl:has(input:checked) { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .tpl:has(input:focus-visible) { outline: 2px solid var(--accent); }
+  .tpl b { font-size: 13.5px; }
+  .tpl span { font-size: 12px; color: var(--muted); }
+  .dlg-btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+  .primary { background: linear-gradient(180deg, #9a7dff, #6f4fff); border-color: #8b6cff; color: #fff; font-weight: 600; }
+
+  /* Uploads */
+  .dropzone { border: 2px dashed #3b4660; border-radius: 12px; padding: 18px; text-align: center; display: flex; flex-direction: column; gap: 8px; align-items: center; background: #121722; }
+  body.dragging .dropzone { border-color: var(--accent); background: #1a1630; }
+  .dz-big { font-weight: 600; font-size: 14px; }
+  .warnish { color: var(--warn) !important; }
+  .file-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+  .file-card { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 6px; border-radius: 10px; font-size: 12px; min-width: 0; }
+  .file-card span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-card.selected { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .checker { background: repeating-conic-gradient(#1b2130 0 25%, #151a24 0 50%) 0 0 / 12px 12px; border-radius: 6px; }
+  .file-card img { width: 64px; height: 64px; object-fit: contain; image-rendering: pixelated; }
+  .file-preview { width: 48px; height: 48px; object-fit: contain; image-rendering: pixelated; }
+  .font-sample { font-size: 20px; font-weight: 400; }
+  body.dragging::after { content: "Drop files to add them to your project"; position: fixed; inset: 0; z-index: 50; pointer-events: none;
+    display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700;
+    background: rgba(13,16,23,.78); border: 3px dashed var(--accent); }
+  .stage.custom-font .hud-top, .stage.custom-font .prompt, .stage.custom-font .announce, .stage.custom-font .banner { font-family: var(--ui-font) !important; }
   .toggles { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; }
   .toggles label { display: flex; align-items: center; gap: 6px; }
   .controls-hint { color: var(--muted); font-size: 12.5px; text-align: center; }
@@ -391,12 +438,20 @@
 <!-- ================================================================ 2. HTML -->
 <header>
   <h1><span class="logo"></span>Custom DSL Game Engine</h1>
-  <select id="demoSelect" title="Load a demo script">
-    <option value="quest">Village Quest</option>
-    <option value="coin">Coin Catcher</option>
-    <option value="slime">Slime Dodger</option>
-    <option value="treasure">Treasure Rush</option>
-  </select>
+  <select id="demoSelect" title="Open one of your projects or a demo"></select>
+  <button id="newProjectBtn" title="Start a new project">＋ New Project</button>
+  <div class="menu-wrap">
+    <button id="projectMenuBtn" title="Project options" aria-haspopup="true" aria-expanded="false">☰</button>
+    <div class="menu" id="projectMenu" hidden>
+      <button data-pm="rename">✎ Rename…</button>
+      <button data-pm="duplicate">⧉ Duplicate</button>
+      <button data-pm="export">⬇ Export project file…</button>
+      <button data-pm="import">⬆ Import project file…</button>
+      <hr>
+      <button data-pm="delete" class="btn-danger">🗑 Delete project</button>
+    </div>
+  </div>
+  <span class="save-status" id="saveStatus"></span>
   <button id="runBtn" title="Compile and play (Ctrl+Enter)">▶ Run Game</button>
   <button id="resetBtn" title="Restore this demo's original script">Reset</button>
   <button id="muteBtn" title="Mute / unmute">🔊</button>
@@ -419,6 +474,7 @@
         <button class="atab active" data-atab="objects">🧱 Objects</button>
         <button class="atab" data-atab="sounds">🔊 Sounds</button>
         <button class="atab" data-atab="ui">💬 UI</button>
+        <button class="atab" data-atab="files">📁 Files</button>
         <span class="spacer"></span>
         <span class="asset-note">Edits write into your script</span>
       </div>
@@ -473,6 +529,14 @@
         <table>
           <tr><td>UI_THEME neon</td><td>classic, parchment, neon or candy (bubbles, dialogue boxes, HUD)</td></tr>
           <tr><td>HUD SCORE OFF</td><td>Hide SCORE, LIVES or TITLE from the HUD</td></tr>
+        </table>
+        <h4>Your uploaded files (🎨 Assets → 📁 Files)</h4>
+        <table>
+          <tr><td>IMAGE my_sprite</td><td>Entity property: draw this image instead of a SHAPE (fit to SIZE)</td></tr>
+          <tr><td>BACKGROUND_IMAGE forest</td><td>Image behind everything (fills the screen)</td></tr>
+          <tr><td>SOUND boing</td><td>Play an uploaded sound from a rule</td></tr>
+          <tr><td>MUSIC theme 60</td><td>Loop an uploaded sound while playing (volume 0 to 100)</td></tr>
+          <tr><td>UI_FONT pixel_font</td><td>Use an uploaded font for the HUD, bubbles and dialogue</td></tr>
         </table>
         <h4>ADD declarations</h4>
         <table>
@@ -542,6 +606,21 @@
     </div>
   </section>
 </main>
+
+<dialog class="dlg" id="newProjectDlg">
+  <form method="dialog">
+    <h2>New project</h2>
+    <label class="dlg-label">Name <input type="text" id="npName" value="My Game" maxlength="60" spellcheck="false"></label>
+    <div class="dlg-label">Start from</div>
+    <div class="tpl-grid" id="npTemplates"></div>
+    <div class="dlg-btns">
+      <button value="cancel" formnovalidate>Cancel</button>
+      <button value="create" class="primary">Create project</button>
+    </div>
+  </form>
+</dialog>
+<input type="file" id="fileInput" multiple hidden>
+<input type="file" id="importInput" accept=".json,application/json" hidden>
 
 <pre id="selftest" hidden></pre>
 
@@ -809,7 +888,11 @@ WHEN SCORE REACHES 200:
 const ENTITY_TYPES = ["PLAYER", "ITEM", "ENEMY", "NPC"];
 // "ADD <kind> <name>" spellings -> internal kind (PROMPT is a dialogue box, not an entity).
 const ADD_KINDS = { CHARACTER: "PLAYER", PLAYER: "PLAYER", NPC: "NPC", ITEM: "ITEM", ENEMY: "ENEMY", PROMPT: "PROMPT", DIALOGUE: "PROMPT", SOUND: "SOUND" };
-const TOP_LEVEL = ["TITLE", "BACKGROUND", "LIVES", "UI_THEME", "HUD", "ADD", "PLAYER", "ITEM", "ENEMY", "NPC", "ON", "WHEN", "SAY", "SHOW"];
+const TOP_LEVEL = ["TITLE", "BACKGROUND", "BACKGROUND_IMAGE", "MUSIC", "LIVES", "UI_THEME", "UI_FONT", "HUD", "ADD", "PLAYER", "ITEM", "ENEMY", "NPC", "ON", "WHEN", "SAY", "SHOW"];
+// Uploaded files of the open project (see 3.11 PROJECTS); the compiler checks names against it.
+const assetLib = { list: [], byName: {} };
+const assetNamesOf = kind => assetLib.list.filter(a => a.kind === kind).map(a => a.name);
+const assetOfKind = (name, kind) => { const a = name && assetLib.byName[name.toLowerCase()]; return a && a.kind === kind ? a : null; };
 const SHAPES = ["box", "circle", "slime", "villager", "star", "heart", "gem", "ghost", "chest"];
 const DEFAULT_SHAPE = { PLAYER: "box", ITEM: "circle", ENEMY: "slime", NPC: "villager" };
 const SOUND_PROPS = ["WAVE", "NOTES", "STEP", "LENGTH", "SLIDE", "VOLUME"];
@@ -828,6 +911,7 @@ const PROPS = {
   AI:       ["ENEMY", "NPC"],
   RESPAWN:  ALL_TYPES,
   SHAPE:    ALL_TYPES,
+  IMAGE:    ALL_TYPES,
 };
 const PROMPT_PROPS = ["TEXT", "DURATION", "WAIT_FOR_KEY"];
 const ACTIONS = ["SCORE", "LIVES", "SOUND", "RESET", "GAME_OVER", "WIN_GAME", "SAY", "SHOW", "ADD", "LOSE", "MOVE"];
@@ -945,6 +1029,7 @@ function compile(src) {
     sounds: {},    // ADD SOUND definitions by lower-case name
     uiTheme: "classic",
     hud: { score: true, lives: true, title: true },
+    bgImage: null, music: null, uiFont: null,   // uploaded files (lower-case names)
   };
   const errors = [], warnings = [];
   const err  = (line, msg, hint) => errors.push({ line, msg, hint });
@@ -986,7 +1071,7 @@ function compile(src) {
     const ent = {
       type, name, key, line: ln,
       color: d.color, size: d.size, speed: d.speed, start: null,
-      controls: "both", count: 1, ai: d.ai, aiTarget: null, aiLine: ln, respawn: false, shape: null,
+      controls: "both", count: 1, ai: d.ai, aiTarget: null, aiLine: ln, respawn: false, shape: null, image: null,
     };
     program.entities.push(ent);
     program.byName[key] = ent;
@@ -1125,6 +1210,18 @@ function compile(src) {
         if (!Number.isInteger(n) || n < 1 || n > 99)
           err(ln, `LIVES needs a whole number from 1 to 99${rest ? `, got "${rest}"` : ""}.`, `Try: LIVES 3`);
         else program.lives = n;
+      }
+      else if (head === "BACKGROUND_IMAGE" || head === "MUSIC" || head === "UI_FONT") {
+        const kind = head === "MUSIC" ? "audio" : head === "UI_FONT" ? "font" : "image";
+        const name = words[1] || "", vol = words[2], a = assetOfKind(name, kind), names = assetNamesOf(kind);
+        const example = { audio: "theme_song", font: "pixel_font", image: "forest" }[kind];
+        if (!name) err(ln, `${head} needs the name of an uploaded ${kind} file.`, `Upload one in 🎨 Assets → 📁 Files, then e.g. ${head} ${example}`);
+        else if (!a) err(ln, `No uploaded ${kind} file named "${name}"${didYouMean(name, names)}`, names.length ? `Uploaded ${kind} files: ${names.join(", ")}` : `Upload one in 🎨 Assets → 📁 Files.`);
+        else if (words.length > (head === "MUSIC" ? 3 : 2)) err(ln, `${head} takes ${head === "MUSIC" ? "a name and an optional volume" : "one name"}.`, head === "MUSIC" ? `Try: MUSIC ${a.name} 60` : `Try: ${head} ${a.name}`);
+        else if (head === "MUSIC" && vol !== undefined && !(num(vol) >= 0 && num(vol) <= 100)) err(ln, `Music volume must be a number from 0 to 100.`, `Try: MUSIC ${a.name} 60`);
+        else if (head === "MUSIC") program.music = { name: a.key, volume: vol === undefined ? 60 : num(vol) };
+        else if (head === "UI_FONT") program.uiFont = a.key;
+        else program.bgImage = a.key;
       }
       else if (head === "UI_THEME") {
         const v = rest.toLowerCase();
@@ -1359,6 +1456,13 @@ function compile(src) {
           if (rest) warn(ln, `RESPAWN doesn't take a value; "${rest}" is ignored.`);
           ent.respawn = true;
           break;
+        case "IMAGE": {
+          const a = assetOfKind(words[1], "image"), names = assetNamesOf("image");
+          if (!words[1] || words.length > 2) err(ln, `IMAGE needs the name of one uploaded image.`, `Upload one in 🎨 Assets → 📁 Files, then e.g. IMAGE my_sprite`);
+          else if (!a) err(ln, `No uploaded image named "${words[1]}"${didYouMean(words[1], names)}`, names.length ? `Uploaded images: ${names.join(", ")}` : `Upload one in 🎨 Assets → 📁 Files.`);
+          else ent.image = a.key;
+          break;
+        }
         case "SHAPE": {
           const v = (words[1] || "").toLowerCase();
           if (!SHAPES.includes(v) || words.length > 2) err(ln, `Unknown shape "${words.slice(1).join(" ")}"${v ? didYouMean(v, SHAPES) : "."}`, `Shapes: ${SHAPES.join(", ")}`);
@@ -1379,10 +1483,10 @@ function compile(src) {
       err(r.line, `Unknown dialogue "${r.name}"${didYouMean(r.name, promptNames)}`,
         promptNames.length ? `Defined dialogues: ${promptNames.join(", ")}` : `Define it first:\nADD DIALOGUE ${r.name}\n  TEXT "Hello!"`);
   }
-  const soundList = [...SOUNDS, ...Object.values(program.sounds).map(s => s.name)];
+  const soundList = [...SOUNDS, ...Object.values(program.sounds).map(s => s.name), ...assetNamesOf("audio")];
   for (const r of soundRefs) {
     const k = r.name.toLowerCase();
-    if (!SOUNDS.includes(k) && !program.sounds[k])
+    if (!SOUNDS.includes(k) && !program.sounds[k] && !assetOfKind(k, "audio"))
       err(r.line, `Unknown sound "${r.name}"${didYouMean(r.name, soundList)}`, `Sounds: ${soundList.join(", ")}  (make your own with ADD SOUND)`);
   }
   for (const s of Object.values(program.sounds)) {
@@ -1500,6 +1604,56 @@ function playSound(name) {
   audio.last[name] = now;
   if (SFX[name]) SFX[name](now + 0.01);
   else if (game.program && game.program.sounds[name]) playSoundDef(game.program.sounds[name]);
+  else if (assetOfKind(name, "audio")) playAssetSound(assetOfKind(name, "audio"));
+}
+// Uploaded audio: decoded once, then played as a one-shot (SOUND) or a loop (MUSIC).
+// Decoding uses an OfflineAudioContext, so it needs no sound device or user click,
+// and the resulting buffer plays in the real context later.
+let offlineDecoder = null;
+function audioBufferOf(asset) {
+  if (!asset.decoding) {
+    const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    if (!OAC) return Promise.resolve(null);
+    offlineDecoder = offlineDecoder || new OAC(1, 1, 44100);
+    const decode = asset.blob.arrayBuffer()
+      .then(ab => new Promise((res, rej) => offlineDecoder.decodeAudioData(ab, res, rej)))
+      .then(buf => (asset.buffer = buf))
+      .catch(() => { asset.failed = true; return null; });
+    const timeout = new Promise(res => setTimeout(() => res("timeout"), 8000));
+    asset.decoding = Promise.race([decode, timeout]).then(r => {
+      if (r === "timeout") { asset.decoding = null; return null; }   // try again next time
+      return r;
+    });
+  }
+  return asset.decoding;
+}
+function playAssetSound(asset, vol = 0.8) {
+  audioBufferOf(asset).then(buf => {
+    if (!buf || !ac()) return;
+    const a = audio.ctx, src = a.createBufferSource(), g = a.createGain();
+    src.buffer = buf; g.gain.value = vol;
+    src.connect(g).connect(audio.master);
+    src.start();
+  });
+}
+const music = { src: null, token: 0 };
+function startMusic(p) {
+  stopMusic();
+  const asset = p && p.music && assetOfKind(p.music.name, "audio");
+  if (!asset) return;
+  const token = music.token;
+  audioBufferOf(asset).then(buf => {
+    if (!buf || token !== music.token || game.state !== "PLAYING" || !ac()) return;   // stopped or replaced meanwhile
+    const a = audio.ctx, src = a.createBufferSource(), g = a.createGain();
+    src.buffer = buf; src.loop = true; g.gain.value = (p.music.volume / 100) * 0.8;
+    src.connect(g).connect(audio.master);
+    src.start();
+    music.src = src;
+  });
+}
+function stopMusic() {
+  music.token++;
+  if (music.src) { try { music.src.stop(); } catch (_) {} music.src = null; }
 }
 // ADD SOUND: play each note in turn with the chosen wave, glide (SLIDE) and volume.
 function playSoundDef(sd) {
@@ -1533,6 +1687,7 @@ const keys = new Set();
 function loadProgram(program) {
   game.program = program;
   applyTheme(program.uiTheme);
+  applyUIFont(program.uiFont);
   resetWorld();
   setState("START");
 }
@@ -1589,13 +1744,15 @@ function placeRandom(inst) {
 
 function setState(s) {
   game.state = s;
-  if (s !== "PLAYING") { game.prompt = null; game.promptQueue = []; }
+  if (s !== "PLAYING") { game.prompt = null; game.promptQueue = []; stopMusic(); }
+  else startMusic(game.program);
   if (s === "GAME_OVER") { playSound("lose"); game.shake = 10; }
   if (s === "VICTORY") { playSound("win"); burst(W / 2, H / 2, "#ffd166", 40); }
   updateBanner();
 }
 function startPlaying() {
   ac();                               // unlock audio on the user gesture
+  for (const a of assetLib.list) if (a.kind === "audio") audioBufferOf(a);   // decode uploads ahead of use
   if (game.state !== "START") resetWorld();
   setState("PLAYING");
   if (game.program.intro.length) runActions(game.program.intro, W / 2, H / 2);
@@ -1874,6 +2031,7 @@ const art = document.createElement("canvas");
 art.width = W / PX; art.height = H / PX;
 let actx = art.getContext("2d");   // swapped temporarily to draw asset thumbnails
 let drawingThumb = false;
+const spriteQueue = [];             // uploaded-image entities, drawn at full resolution after the art pass
 
 function rows(X, Y, R, halfAt, color) {   // fill rows y in [-R, R) with half-width halfAt(y)
   actx.fillStyle = color;
@@ -1952,6 +2110,13 @@ function drawEntity(i, t) {
     fx = fy = 0;
     if (pl) { const len = Math.hypot(pl.x - i.x, pl.y - i.y) || 1; fx = (pl.x - i.x) / len; fy = (pl.y - i.y) / len; }
   }
+  // IMAGE: the shadow is pixel art, the sprite itself is queued for the full-resolution pass.
+  const sprite = d.image && assetOfKind(d.image, "image");
+  if (sprite && sprite.ready && !drawingThumb) {
+    spriteQueue.push({ img: sprite.img, x: i.x, y: Y * PX, size: d.size, flip: living && fx < -0.2 });
+    if (d.type === "NPC" && !i.spoke) drawBang(X, Y, R, t);
+    return;
+  }
   const sparkle = () => {
     if ((Math.floor(t * 2 + i.id * 0.7) % 4) !== 0) return;
     actx.fillStyle = "#fff";
@@ -2021,17 +2186,46 @@ function drawEntity(i, t) {
       else if (shape !== "chest") sparkle();
     }
   }
-  if (d.type === "NPC" && !i.spoke && !drawingThumb) {   // bobbing "!" until they've said something
-    const by = Y - R - 8 + Math.round(Math.sin(t * 4) * 1.5);
-    actx.fillStyle = "#1b2030"; actx.fillRect(X - 2, by - 1, 4, 8);
-    actx.fillStyle = "#ffd166"; actx.fillRect(X - 1, by, 2, 4); actx.fillRect(X - 1, by + 5, 2, 1);
+  if (d.type === "NPC" && !i.spoke && !drawingThumb) drawBang(X, Y, R, t);
+}
+function drawBang(X, Y, R, t) {        // bobbing "!" over an NPC until they've said something
+  const by = Y - R - 8 + Math.round(Math.sin(t * 4) * 1.5);
+  actx.fillStyle = "#1b2030"; actx.fillRect(X - 2, by - 1, 4, 8);
+  actx.fillStyle = "#ffd166"; actx.fillRect(X - 1, by, 2, 4); actx.fillRect(X - 1, by + 5, 2, 1);
+}
+// Uploaded sprites: fit the longest side to SIZE. Shrinking is smoothed; enlarging keeps hard pixels.
+function drawSprites(ox, oy) {
+  for (const s of spriteQueue) {
+    const iw = s.img.naturalWidth || 64, ih = s.img.naturalHeight || 64;
+    const k = s.size / Math.max(iw, ih), w = iw * k, h = ih * k;
+    ctx.imageSmoothingEnabled = k < 1;
+    ctx.save();
+    ctx.translate(Math.round(s.x + ox), Math.round(s.y + oy));
+    if (s.flip) ctx.scale(-1, 1);                    // face the way it's moving
+    ctx.drawImage(s.img, -w / 2, -h / 2, w, h);
+    ctx.restore();
   }
+  spriteQueue.length = 0;
+  ctx.imageSmoothingEnabled = false;
+}
+function drawImageInto(c, g, img, x, y, w, h, cover) {   // contain (or cover) img inside a box
+  const iw = img.naturalWidth || 64, ih = img.naturalHeight || 64;
+  const k = cover ? Math.max(w / iw, h / ih) : Math.min(w / iw, h / ih);
+  g.imageSmoothingEnabled = k < 1;
+  g.drawImage(img, x + (w - iw * k) / 2, y + (h - ih * k) / 2, iw * k, ih * k);
 }
 
 // Asset-panel thumbnail: draw one entity definition into a small canvas using the game's own art code.
 const thumbArt = document.createElement("canvas");
 thumbArt.width = thumbArt.height = 32;
 function drawThumb(canvas, def, t) {
+  const sprite = def.image && assetOfKind(def.image, "image");
+  if (sprite && sprite.ready) {
+    const c = canvas.getContext("2d");
+    c.clearRect(0, 0, canvas.width, canvas.height);
+    drawImageInto(canvas, c, sprite.img, 4, 4, canvas.width - 8, canvas.height - 8, false);
+    return;
+  }
   const size = Math.max(26, Math.min(def.size * 1.6, 50));
   const fake = { def: { ...def, size }, r: size / 2, x: 32, y: 30, id: (def.key || "").length, fx: 0, fy: 0.5, moving: false, spoke: true, alive: true };
   const saved = actx;
@@ -2050,12 +2244,17 @@ function drawThumb(canvas, def, t) {
 function render() {
   const p = game.program, t = game.time;
   const bg = p ? p.background : "#111";
-  actx.fillStyle = bg;
-  actx.fillRect(0, 0, art.width, art.height);
-  // subtle checkerboard floor
-  actx.fillStyle = shade(bg, -0.12);
-  for (let y = 0; y < art.height; y += 8)
-    for (let x = ((y / 8) % 2) * 8; x < art.width; x += 16) actx.fillRect(x, y, 8, 8);
+  const bgAsset = p && p.bgImage && assetOfKind(p.bgImage, "image");
+  const bgImg = bgAsset && bgAsset.ready ? bgAsset.img : null;
+  if (bgImg) actx.clearRect(0, 0, art.width, art.height);   // the uploaded backdrop shows through
+  else {
+    actx.fillStyle = bg;
+    actx.fillRect(0, 0, art.width, art.height);
+    // subtle checkerboard floor
+    actx.fillStyle = shade(bg, -0.12);
+    for (let y = 0; y < art.height; y += 8)
+      for (let x = ((y / 8) % 2) * 8; x < art.width; x += 16) actx.fillRect(x, y, 8, 8);
+  }
 
   if (p) {
     // draw order: items, enemies, players (players on top)
@@ -2075,7 +2274,10 @@ function render() {
   const sy = game.shake ? Math.round((Math.random() - 0.5) * game.shake) : 0;
   ctx.imageSmoothingEnabled = false;
   ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
+  if (bgImg) drawImageInto(canvas, ctx, bgImg, 0, 0, W, H, true);
+  ctx.imageSmoothingEnabled = false;
   ctx.drawImage(art, sx, sy, W, H);
+  drawSprites(sx, sy);
 
   // speech bubbles are drawn at full resolution so the text stays sharp
   drawBubbles();
@@ -2100,7 +2302,22 @@ const UI_THEME_STYLES = {
   neon:      { label: "Neon",      font: "bold 13px Consolas, 'Courier New', monospace", bubbleBg: "#0b0f1f", bubbleInk: "#7df9ff", bubbleLine: "#ff2fd6", boxBg: "rgba(6,8,20,.92)", boxInk: "#7df9ff", boxLine: "#ff2fd6", stage: "#090418" },
   candy:     { label: "Candy",     font: "bold 13px 'Trebuchet MS', 'Segoe UI', sans-serif", bubbleBg: "#ffe3f1", bubbleInk: "#7a2e5b", bubbleLine: "#ff6fb5", boxBg: "#ffe3f1", boxInk: "#7a2e5b", boxLine: "#ff6fb5", stage: "#3a1630" },
 };
-const uiTheme = () => UI_THEME_STYLES[stage.dataset.ui] || UI_THEME_STYLES.classic;
+const uiTheme = () => {
+  const base = UI_THEME_STYLES[stage.dataset.ui] || UI_THEME_STYLES.classic;
+  return stage.dataset.font ? { ...base, font: `14px ${stage.dataset.font}, system-ui, sans-serif` } : base;
+};
+// UI_FONT: an uploaded font for the HUD, banners, dialogue boxes and speech bubbles.
+function applyUIFont(key) {
+  const a = assetOfKind(key, "font");
+  if (a && a.ready) {
+    stage.dataset.font = `"${a.family}"`;
+    stage.style.setProperty("--ui-font", `"${a.family}", system-ui, sans-serif`);
+    stage.classList.add("custom-font");
+  } else {
+    delete stage.dataset.font;
+    stage.classList.remove("custom-font");
+  }
+}
 function applyTheme(name) { stage.dataset.ui = UI_THEME_STYLES[name] ? name : "classic"; }
 const BUBBLE_FONT = "bold 13px Consolas, 'Courier New', monospace";
 function wrapLines(text, maxW) {
@@ -2251,7 +2468,7 @@ const buffers = {};          // per-demo edited text, so switching demos keeps y
 
 const KW_ENT = new Set([...ENTITY_TYPES, ...Object.keys(ADD_KINDS)]);
 const KW_RULE = new Set(["ON", "TOUCH", "TOUCHES", "WHEN", "REACHES", "SAYS", "TO"]);
-const KW_DIR = new Set(["TITLE", "BACKGROUND", "LIVES", "ADD", "UI_THEME", "HUD"]);
+const KW_DIR = new Set(["TITLE", "BACKGROUND", "BACKGROUND_IMAGE", "MUSIC", "LIVES", "ADD", "UI_THEME", "UI_FONT", "HUD"]);
 const KW_PROP = new Set([...Object.keys(PROPS), ...PROMPT_PROPS, ...SOUND_PROPS]), KW_ACT = new Set(ACTIONS);
 const KW_AMOUNT = new Set(["SCORE", "POINT", "POINTS", "LIFE", "LIVES"]);
 const KW_VAL = new Set([...SOUNDS, ...AI_MODES, ...CONTROL_SCHEMES, ...SHAPES, ...WAVES, ...UI_THEMES, "off"].map(s => s.toUpperCase()));
@@ -2357,7 +2574,7 @@ function updateDirty() {
   dirtyNote.textContent = runningSource !== null && ta.value !== runningSource ? "● Script changed — press ▶ Run Game to apply" : "";
 }
 ta.addEventListener("input", () => {
-  buffers[demoSelect.value] = ta.value;
+  sourceChanged();
   assetUI.history.length = 0;                       // typed edits make old panel snapshots stale
   renderEditor();                                   // instant highlighting
   clearTimeout(compileTimer);
@@ -2440,23 +2657,37 @@ function runGame() {
   return true;
 }
 function playSoundSafe(n) { try { playSound(n); } catch (_) {} }
+const DEMO_LABELS = { quest: "Village Quest", coin: "Coin Catcher", slime: "Slime Dodger", treasure: "Treasure Rush" };
+// Demos are scratch space: edits live in memory only. Projects (3.11) are saved.
+function sourceChanged() {
+  if (projects.current) scheduleSave();
+  else buffers[projects.demo] = ta.value;
+}
 function loadDemo(id, pristine) {
+  if (projects.current) flushSave();
+  projects.current = null; projects.demo = id;
+  revokeAssets();
+  document.title = "Custom DSL Game Engine";
   if (pristine || buffers[id] === undefined) buffers[id] = DEMOS[id];
   ta.value = buffers[id];
   ta.scrollTop = 0;
   lastResult = compile(ta.value);
-  logMessages(lastResult, { type: "info", text: `Loaded demo "${demoSelect.selectedOptions[0].text}". Press ▶ Run Game (or Space on the game) to play.` });
+  logMessages(lastResult, { type: "info", text: `Loaded demo "${DEMO_LABELS[id]}". Press ▶ Run Game (or Space on the game) to play. To keep your changes, use ＋ New Project or ☰ → Save as my project.` });
+  populateSelect();
   renderEditor();
   if (!lastResult.errors.length) { loadProgram(lastResult.program); runningSource = ta.value; }
   updateDirty();
+  resetAssetPanel();
+}
+function resetAssetPanel() {
   assetUI.history.length = 0;
-  assetUI.sel = { objects: null, sounds: null, ui: null };
+  assetUI.sel = { objects: null, sounds: null, ui: null, files: null };
   assetUndoBtn.hidden = true;
   refreshAssets(true);
 }
 document.getElementById("runBtn").addEventListener("click", runGame);
-document.getElementById("resetBtn").addEventListener("click", () => loadDemo(demoSelect.value, true));
-demoSelect.addEventListener("change", () => loadDemo(demoSelect.value, false));
+document.getElementById("resetBtn").addEventListener("click", () => { if (!projects.current) loadDemo(projects.demo, true); });
+demoSelect.addEventListener("change", () => openEntry(demoSelect.value));
 const muteBtn = document.getElementById("muteBtn");
 muteBtn.addEventListener("click", () => {
   audio.muted = !audio.muted;
@@ -2502,7 +2733,7 @@ const assetsEl = document.getElementById("assets");
 const assetBody = document.getElementById("assetBody");
 const editorPane = document.getElementById("editorPane");
 const assetUndoBtn = document.getElementById("assetUndo");
-const assetUI = { tab: "objects", sel: { objects: null, sounds: null, ui: null }, history: [], lastPush: 0, lastField: "", placing: null };
+const assetUI = { tab: "objects", sel: { objects: null, sounds: null, ui: null, files: null }, history: [], lastPush: 0, lastField: "", placing: null };
 let lastCaret = 0;   // where the script cursor was, for "Insert into rule at cursor"
 ["keyup", "click", "select", "input"].forEach(ev => ta.addEventListener(ev, () => { lastCaret = ta.selectionStart; }));
 const escAttr = s => escapeHTML(String(s)).replace(/"/g, "&quot;");
@@ -2656,7 +2887,7 @@ function commit(lines, { full = false, note = "", field = "" } = {}) {
 function setSource(text, note) {
   const st = ta.scrollTop;
   ta.value = text;
-  buffers[demoSelect.value] = text;
+  sourceChanged();
   lastResult = compile(text);
   logMessages(lastResult, note ? { type: "info", text: note } : null);
   renderEditor();
@@ -2679,6 +2910,8 @@ function hotReload(p) {
   const old = game.program;
   game.program = p;
   applyTheme(p.uiTheme);
+  applyUIFont(p.uiFont);
+  if (game.state === "PLAYING" && JSON.stringify(p.music) !== JSON.stringify(old && old.music)) startMusic(p);
   for (const i of game.inst) {
     const nd = p.byName[i.def.key];
     if (nd) { i.def = nd; i.r = nd.size / 2; clampInst(i); }
@@ -2740,6 +2973,8 @@ function objectInspector(p) {
     ${nameRow("name", e.name)}
     <label>Type</label><select data-f="type">${ENTITY_TYPES.map(t => opt(t, e.type)).join("")}</select>
     <label>Shape</label><select data-f="shape">${opt("", e.shape || "", `auto (${DEFAULT_SHAPE[e.type]})`)}${SHAPES.map(s => opt(s, e.shape)).join("")}</select>
+    <label>Image</label><div class="row"><select data-f="image">${opt("", e.image || "", "none (draw the shape)")}${assetLib.list.filter(a => a.kind === "image").map(a => opt(a.key, e.image, escapeHTML(a.name))).join("")}</select>
+      <button class="btn-s" data-act="uploadfor" title="Upload a picture and use it for ${escAttr(e.name)}">⬆ Upload…</button></div>
     <label>Color</label><div class="row"><input type="color" data-f="colorpick" value="${toHex(e.color)}"><input type="text" data-f="color" value="${escAttr(e.color)}" spellcheck="false"></div>
     <label>Size</label>${rangeRow("size", 4, 120, 1, e.size)}
     <label>Speed</label>${rangeRow("speed", 0, 10, 0.1, e.speed)}
@@ -2835,6 +3070,13 @@ function soundsHTML(p) {
   return `<div class="asset-section">
     <h3>Built-in</h3>
     <div class="list">${SOUNDS.map(s => soundRow("builtin:" + s, s, BUILTIN_SOUND_INFO[s], false)).join("")}</div>
+    <h3>Uploaded <span class="count">${assetNamesOf("audio").length}</span></h3>
+    <div class="list">${assetLib.list.filter(a => a.kind === "audio").map(a => `
+      <div class="list-row"><button class="play" data-act="playfile" data-key="${a.key}" title="Play">▶</button>
+        <span class="name">${escapeHTML(a.name)}</span><span class="desc">your file · ${fmtSize(a.size)}</span>
+        <button class="btn-s" data-act="insert" data-text="SOUND ${escAttr(a.name)}">↳ Insert</button></div>`).join("")}
+      <div class="btns"><button class="btn-s" data-act="browse" data-accept="audio/*">⬆ Upload a sound file…</button></div>
+    </div>
     <h3>Your sounds <span class="count">${customs.length}</span></h3>
     <div id="aList">${soundList(p)}</div>
     <h3>New sound from a preset</h3>
@@ -2910,6 +3152,13 @@ function uiHTML(p) {
     <div class="theme-grid">${UI_THEMES.map(t => themeCard(t, p.uiTheme === t)).join("")}</div>
     <h3>HUD</h3>
     <div class="toggles">${HUD_PARTS.map(h => `<label><input type="checkbox" data-f="hud" data-k="${h}" ${p.hud[h.toLowerCase()] ? "checked" : ""}> Show ${h.toLowerCase()}</label>`).join("")}</div>
+    <h3>Your files</h3>
+    <div class="inspector">
+      <label>Background</label><div class="row"><select data-f="uibg">${fileOptions("image", p.bgImage, "plain color (BACKGROUND)")}</select><button class="btn-s" data-act="browse" data-accept="image/*">⬆</button></div>
+      <label>Music</label><div class="row"><select data-f="uimusic">${fileOptions("audio", p.music && p.music.name, "no music")}</select><button class="btn-s" data-act="browse" data-accept="audio/*">⬆</button></div>
+      ${p.music ? `<label>Music volume</label>${rangeRow("musicvol", 0, 100, 1, p.music.volume)}` : ""}
+      <label>Font</label><div class="row"><select data-f="uifont">${fileOptions("font", p.uiFont, "theme font")}</select><button class="btn-s" data-act="browse" data-accept=".ttf,.otf,.woff,.woff2">⬆</button></div>
+    </div>
     <h3>Dialogue boxes <span class="count">${prompts.length}</span></h3>
     <div id="aList">${promptList(p)}</div>
     <div class="btns"><button class="btn-s btn-accent" data-act="newprompt">＋ New dialogue box</button></div>
@@ -2927,7 +3176,77 @@ function previewPrompt(pr) {
   game.prompt = { def, cont: null, shown: 0, life: def.duration };
 }
 
+/* ---- Files (your uploads) ---- */
+const fmtSize = n => n >= 1048576 ? (n / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(n / 1024)) + " KB";
+const fileOptions = (kind, cur, noneLabel) =>
+  `<option value="">${noneLabel}</option>` + assetLib.list.filter(a => a.kind === kind)
+    .map(a => `<option value="${a.key}" ${cur === a.key ? "selected" : ""}>${escapeHTML(a.name)}</option>`).join("");
+// Script lines that use an uploaded file.
+function usesOf(a) {
+  return srcLines().map((l, k) => {
+    const m = stripComment(l).match(/^\s*(IMAGE|BACKGROUND_IMAGE|MUSIC|UI_FONT|SOUND)\s+(\S+)/i);
+    return m && m[2].toLowerCase() === a.key ? k + 1 : 0;
+  }).filter(Boolean);
+}
+function filesList() {
+  const of = k => assetLib.list.filter(a => a.kind === k);
+  const sel = k => (assetUI.sel.files === k ? " selected" : "");
+  const imgs = of("image"), auds = of("audio"), fonts = of("font");
+  if (!assetLib.list.length) return `<div class="empty">No uploads yet. Your files are saved inside this project, and travel with it when you export.</div>`;
+  return (imgs.length ? `<h3>Images <span class="count">${imgs.length}</span></h3><div class="file-grid">${imgs.map(a => `
+      <button class="file-card${sel(a.key)}" data-act="select" data-key="${a.key}"><img class="checker" src="${a.url}" alt=""><span>${escapeHTML(a.name)}</span></button>`).join("")}</div>` : "")
+    + (auds.length ? `<h3>Sounds <span class="count">${auds.length}</span></h3><div class="list">${auds.map(a => `
+      <div class="list-row${sel(a.key)}" data-act="select" data-key="${a.key}" role="button" tabindex="0">
+        <button class="play" data-act="playfile" data-key="${a.key}" title="Play">▶</button>
+        <span class="name">${escapeHTML(a.name)}</span><span class="desc">${fmtSize(a.size)}${a.failed ? " · couldn't decode" : ""}</span></div>`).join("")}</div>` : "")
+    + (fonts.length ? `<h3>Fonts <span class="count">${fonts.length}</span></h3><div class="list">${fonts.map(a => `
+      <div class="list-row${sel(a.key)}" data-act="select" data-key="${a.key}" role="button" tabindex="0">
+        <span class="name">${escapeHTML(a.name)}</span><span class="desc font-sample" style="font-family:'${a.family}'">${a.failed ? "couldn't load this font" : "The quick brown fox 123"}</span></div>`).join("")}</div>` : "");
+}
+function fileInspector(p) {
+  const a = assetLib.byName[assetUI.sel.files];
+  if (!a) return "";
+  const used = usesOf(a);
+  const preview = a.kind === "image" ? `<img class="file-preview checker" src="${a.url}" alt="">`
+    : a.kind === "audio" ? `<button class="play" data-act="playfile" data-key="${a.key}" title="Play">▶</button>`
+    : `<span class="font-sample" style="font-family:'${a.family}'">Aa</span>`;
+  let actions;
+  if (a.kind === "image") actions = `
+    <label>Use on</label><div class="row">${p.entities.length ? `<select id="fileTarget">${p.entities.map(e => `<option value="${e.key}">${escapeHTML(e.name)}${e.image === a.key ? " ✓" : ""}</option>`).join("")}</select>
+      <button class="btn-s btn-accent" data-act="useimage">Use as its sprite</button>` : `<span class="hint-s">No objects yet</span>`}</div>
+    <label>New object</label><div class="row"><select id="fileNewType">${ENTITY_TYPES.map(t => `<option ${t === "ITEM" ? "selected" : ""}>${t}</option>`).join("")}</select>
+      <button class="btn-s" data-act="newfromimage">＋ Add an object with this image</button></div>
+    <label>Background</label><div class="row"><button class="btn-s" data-act="usebg">${p.bgImage === a.key ? "✓ Background image (click to remove)" : "Use as background image"}</button></div>`;
+  else if (a.kind === "audio") actions = `
+    <label>Sound effect</label><div class="row"><button class="btn-s btn-accent" data-act="insert" data-text="SOUND ${escAttr(a.name)}">↳ Insert SOUND ${escapeHTML(a.name)} into rule at cursor</button></div>
+    <label>Music</label><div class="row"><button class="btn-s" data-act="usemusic">${p.music && p.music.name === a.key ? "✓ Background music (click to remove)" : "Loop as background music"}</button></div>`;
+  else actions = `
+    <label>UI font</label><div class="row"><button class="btn-s btn-accent" data-act="usefont" ${a.failed ? "disabled" : ""}>${p.uiFont === a.key ? "✓ UI font (click to remove)" : "Use for HUD, bubbles and dialogue"}</button></div>`;
+  return `<div class="inspector">
+    <div class="head">${preview}<span>${escapeHTML(a.name)}</span><span class="badge">${a.kind.toUpperCase()} · ${fmtSize(a.size)}${a.w ? ` · ${a.w}×${a.h}` : ""}</span></div>
+    ${nameRow("fname", a.name)}
+    ${actions}
+    ${a.failed ? `<div class="full field-err">This file couldn't be ${a.kind === "audio" ? "decoded" : "loaded"} by the browser.</div>` : ""}
+    <div class="full hint-s">${used.length ? `Used on line${used.length > 1 ? "s" : ""} ${used.join(", ")} of the script.` : "Not used in the script yet."}</div>
+    <div class="full btns"><button class="btn-s btn-danger" data-act="deletefile">🗑 Delete file</button></div>
+  </div>`;
+}
+function filesHTML(p) {
+  if (!assetLib.byName[assetUI.sel.files]) assetUI.sel.files = assetLib.list[0] ? assetLib.list[0].key : null;
+  return `<div class="asset-section">
+    <div class="dropzone">
+      <div class="dz-big">⬆ Drop your own images, sounds or fonts here</div>
+      <div><button class="btn-s btn-accent" data-act="browse">Choose files…</button></div>
+      <div class="hint-s">PNG · JPG · GIF · WebP · SVG &nbsp;|&nbsp; MP3 · WAV · OGG · M4A &nbsp;|&nbsp; TTF · OTF · WOFF. Up to 15 MB each.</div>
+      ${projects.current ? "" : `<div class="hint-s warnish">You're on a demo. Uploading saves it as your own project first.</div>`}
+    </div>
+    <div id="aList">${filesList()}</div>
+    <div id="aInspector">${fileInspector(p)}</div>
+  </div>`;
+}
+
 const SECTIONS = {
+  files:   { html: filesHTML,   list: filesList,   line: () => null },
   objects: { html: objectsHTML, list: objectsList, line: () => { const e = curEnt(); return e && e.line; } },
   sounds:  { html: soundsHTML,  list: soundList,   line: () => { const s = curSound(); return s && s.line; } },
   ui:      { html: uiHTML,      list: promptList,  line: () => { const pr = curPrompt(); return pr && pr.line; } },
@@ -3067,6 +3386,33 @@ assetBody.addEventListener("click", e => {
       break;
     }
     case "previewprompt": e.stopPropagation(); previewPrompt(p.prompts[el.dataset.key]); break;
+    case "browse": pickFiles(el.dataset.accept); break;
+    case "uploadfor": if (en) pickFiles("image/*", en.key); break;
+    case "playfile": e.stopPropagation(); { const a = assetLib.byName[el.dataset.key]; if (a) playAssetSound(a); } break;
+    case "useimage": {
+      const a = assetLib.byName[assetUI.sel.files], tgt = p.byName[(document.getElementById("fileTarget") || {}).value];
+      if (a && tgt) editLines(L => setBlockProp(L, tgt.line, "IMAGE", a.name), { full: true, note: `${tgt.name} now uses the image ${a.name}.` });
+      break;
+    }
+    case "newfromimage": {
+      const a = assetLib.byName[assetUI.sel.files], type = document.getElementById("fileNewType").value;
+      if (!a) break;
+      const name = uniqueName(a.key, n => p.byName[n] || p.prompts[n] || NAME_KEYWORDS.has(n.toUpperCase()));
+      const extra = { PLAYER: ["  SPEED 4", "  START 300, 200"], ENEMY: ["  SPEED 1.5", "  AI wander"], ITEM: ["  COUNT 3"], NPC: [] }[type];
+      const header = type === "PLAYER" ? "ADD CHARACTER" : "ADD " + type;
+      editLines(L => insertBlock(L, [`${header} ${name}`, `  IMAGE ${a.name}`, `  SIZE 32`, ...extra]),
+        { full: true, note: `Added ${type} ${name} using your image. Give it a rule, e.g. ON <player> TOUCH ${name}:` });
+      break;
+    }
+    case "usebg": case "usemusic": case "usefont": {
+      const a = assetLib.byName[assetUI.sel.files];
+      if (!a) break;
+      const dir = { usebg: "BACKGROUND_IMAGE", usemusic: "MUSIC", usefont: "UI_FONT" }[el.dataset.act];
+      const on = { usebg: p.bgImage, usemusic: p.music && p.music.name, usefont: p.uiFont }[el.dataset.act] === a.key;
+      editLines(L => setTopLine(L, w => w[0].toUpperCase() === dir, on ? null : `${dir} ${a.name}`), { full: true });
+      break;
+    }
+    case "deletefile": { const a = assetLib.byName[assetUI.sel.files]; if (a) deleteUploaded(a); break; }
     case "saypreview": announce(document.getElementById("sayText").value || "…"); break;
     case "sayinsert": insertIntoRule(`SAY "${(document.getElementById("sayText").value || "Level up!").replace(/"/g, "'")}"`); break;
   }
@@ -3107,6 +3453,11 @@ assetBody.addEventListener("input", e => {
       if (pr) editLines(L => setBlockProp(L, pr.line, "TEXT", `"${el.value.replace(/"/g, "'").replace(/\s*\n\s*/g, " ")}"`), { field: f }); break;
     case "pduration":
       if (pr) editLines(L => setBlockProp(L, pr.line, "DURATION", el.value), { field: f }); break;
+    case "musicvol": {
+      const m = lastResult.program.music, a = m && assetLib.byName[m.name];
+      if (a) editLines(L => setTopLine(L, w => w[0].toUpperCase() === "MUSIC", `MUSIC ${a.name} ${el.value}`), { field: f });
+      break;
+    }
   }
 });
 
@@ -3119,6 +3470,13 @@ assetBody.addEventListener("change", e => {
     case "name": if (en) renameAsset("entity", en.name, el.value.trim()); break;
     case "sname": if (sd) renameAsset("sound", sd.name, el.value.trim()); break;
     case "pname": if (pr) renameAsset("prompt", pr.name, el.value.trim()); break;
+    case "fname": { const a = assetLib.byName[assetUI.sel.files]; if (a) renameUploaded(a, el.value.trim()); break; }
+    case "image": if (en) { const a = assetLib.byName[el.value]; editLines(L => setBlockProp(L, en.line, "IMAGE", a ? a.name : null), { full: true }); } break;
+    case "uibg": case "uimusic": case "uifont": {
+      const dir = { uibg: "BACKGROUND_IMAGE", uimusic: "MUSIC", uifont: "UI_FONT" }[f], a = assetLib.byName[el.value];
+      editLines(L => setTopLine(L, w => w[0].toUpperCase() === dir, a ? `${dir} ${a.name}` : null), { full: true });
+      break;
+    }
     case "color": {
       const v = el.value.trim();
       if (en && isColor(v)) editLines(L => setBlockProp(L, en.line, "COLOR", v), { full: true });
@@ -3162,7 +3520,432 @@ assetBody.addEventListener("change", e => {
   }
 });
 
-/* ============================================ 3.10 BOOT + SELF-TEST */
+/* ======================================================= 3.11 PROJECTS */
+/*
+  A project = { id, name, source, created, updated } plus its uploaded files
+  ({ id, projectId, name, kind, mime, size, blob, added }). Both live in
+  IndexedDB, which can hold real files. If the browser refuses storage,
+  everything keeps working in memory and ☰ → Export is the way to keep work.
+*/
+const store = (() => {
+  const mem = { projects: new Map(), assets: new Map() };
+  let dbp = null, persistent = true;
+  function open() {
+    if (!dbp) dbp = new Promise((res, rej) => {
+      // Some browsers (and headless ones) never answer open(); don't let the app wait forever.
+      setTimeout(() => rej(new Error("storage timed out")), 2500);
+      try {
+        const rq = indexedDB.open("dsl-game-engine", 1);
+        rq.onupgradeneeded = () => {
+          rq.result.createObjectStore("projects", { keyPath: "id" });
+          rq.result.createObjectStore("assets", { keyPath: "id" });
+        };
+        rq.onsuccess = () => res(rq.result);
+        rq.onerror = () => rej(rq.error);
+      } catch (e) { rej(e); }
+    }).catch(() => { persistent = false; return null; });
+    return dbp;
+  }
+  async function run(name, mode, fn, memFn) {
+    const db = await open();
+    if (!db) return memFn(mem[name]);
+    return new Promise((res, rej) => {
+      const t = db.transaction(name, mode), rq = fn(t.objectStore(name));
+      t.oncomplete = () => res(rq ? rq.result : undefined);
+      t.onerror = t.onabort = () => rej(t.error || new Error("storage error"));
+    });
+  }
+  return {
+    get persistent() { return persistent; },
+    ready: open,
+    all: name => run(name, "readonly", s => s.getAll(), m => [...m.values()]),
+    get: (name, id) => run(name, "readonly", s => s.get(id), m => m.get(id)),
+    put: (name, v) => run(name, "readwrite", s => s.put(v), m => { m.set(v.id, v); }),
+    del: (name, id) => run(name, "readwrite", s => s.delete(id), m => { m.delete(id); }),
+  };
+})();
+
+const projects = { list: [], current: null, demo: "quest", saveTimer: 0, dirty: false };
+const PROJECT_FORMAT = "dsl-game-engine-project";
+const saveStatus = document.getElementById("saveStatus");
+const newId = prefix => prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+function setSaveStatus(text, cls = "") { saveStatus.textContent = text; saveStatus.className = "save-status " + cls; }
+// Which project to reopen next time. The project record itself carries `opened` (in IndexedDB,
+// which survives a crash); localStorage only remembers that you switched to a demo.
+function remember(id) { try { localStorage.setItem("dsl-engine:last", id || "demo"); } catch (_) {} }
+function note(type, text) { logMessages(lastResult, { type, text }); }
+
+function populateSelect() {
+  const mine = [...projects.list].sort((a, b) => b.updated - a.updated);
+  demoSelect.innerHTML =
+    (mine.length ? `<optgroup label="My projects">${mine.map(p => `<option value="proj:${p.id}">${escapeHTML(p.name)}</option>`).join("")}</optgroup>` : "") +
+    `<optgroup label="Demos">${Object.entries(DEMO_LABELS).map(([k, v]) => `<option value="demo:${k}">${v}</option>`).join("")}</optgroup>`;
+  demoSelect.value = projects.current ? "proj:" + projects.current.id : "demo:" + projects.demo;
+  const isProj = !!projects.current;
+  document.getElementById("resetBtn").hidden = isProj;
+  for (const b of document.querySelectorAll("[data-pm]")) {
+    if (b.dataset.pm === "rename" || b.dataset.pm === "delete") b.disabled = !isProj;
+    if (b.dataset.pm === "duplicate") b.textContent = isProj ? "⧉ Duplicate" : "💾 Save as my project";
+  }
+  if (!isProj) setSaveStatus(store.persistent ? "Demo · not saved" : "⚠ Saving unavailable", store.persistent ? "" : "warn");
+}
+function uniqueProjectName(name) {
+  const taken = n => projects.list.some(p => p.name.toLowerCase() === n.toLowerCase());
+  if (!taken(name)) return name;
+  for (let n = 2; ; n++) if (!taken(`${name} (${n})`)) return `${name} (${n})`;
+}
+
+/* ---- saving ---- */
+function scheduleSave() {
+  if (!projects.current) return;
+  projects.dirty = true;
+  setSaveStatus("Saving…");
+  clearTimeout(projects.saveTimer);
+  projects.saveTimer = setTimeout(saveNow, 500);
+}
+async function saveNow() {
+  clearTimeout(projects.saveTimer);
+  const p = projects.current;
+  if (!p) return;
+  p.source = ta.value; p.updated = Date.now();       // read synchronously, before anything else can change
+  projects.dirty = false;
+  try {
+    await store.put("projects", { ...p });
+    if (projects.current === p) setSaveStatus(store.persistent ? "✓ Saved" : "⚠ Not saved (☰ → Export)", store.persistent ? "ok" : "warn");
+  } catch (e) { setSaveStatus("⚠ Save failed", "warn"); note("error", `Couldn't save: ${e.message}. Use ☰ → Export project file to keep a copy.`); }
+}
+const flushSave = () => (projects.dirty ? saveNow() : Promise.resolve());
+window.addEventListener("pagehide", () => { if (projects.dirty) saveNow(); });
+
+/* ---- uploaded files of the open project ---- */
+function revokeAssets() {
+  for (const a of assetLib.list) {
+    if (a.url) URL.revokeObjectURL(a.url);
+    if (a.font) document.fonts.delete(a.font);
+  }
+  assetLib.list = []; assetLib.byName = {};
+}
+const storedFields = a => ({ id: a.id, projectId: a.projectId, name: a.name, kind: a.kind, mime: a.mime, size: a.size, blob: a.blob, added: a.added });
+function addRuntimeAsset(rec) {
+  const a = { ...rec, key: rec.name.toLowerCase(), url: URL.createObjectURL(rec.blob), ready: false };
+  if (a.kind === "image") {
+    a.img = new Image();
+    a.img.onload = () => { a.ready = true; a.w = a.img.naturalWidth; a.h = a.img.naturalHeight; assetLoaded(a); };
+    a.img.onerror = () => { a.failed = true; assetLoaded(a); };
+    a.img.src = a.url;
+  } else if (a.kind === "font") {
+    a.family = "upload-" + a.id;            // stable even if the file is renamed
+    rec.blob.arrayBuffer().then(ab => new FontFace(a.family, ab).load())
+      .then(ff => { a.font = ff; document.fonts.add(ff); a.ready = true; assetLoaded(a); })
+      .catch(() => { a.failed = true; assetLoaded(a); });
+  } else a.ready = true;
+  assetLib.list.push(a);
+  assetLib.byName[a.key] = a;
+  return a;
+}
+function assetLoaded(a) {
+  if (!assetLib.list.includes(a)) return;
+  if (a.kind === "font" && game.program && game.program.uiFont === a.key) applyUIFont(a.key);
+  if (!assetsEl.hidden) { drawAllThumbs(); if (a.failed || a.kind === "image") refreshAssets(false); }
+}
+
+/* ---- opening / creating ---- */
+async function openProject(id) {
+  await flushSave();
+  const rec = projects.list.find(p => p.id === id) || await store.get("projects", id);
+  if (!rec) { note("warn", "That project couldn't be found."); return loadDemo("quest", true); }
+  const files = (await store.all("assets")).filter(a => a.projectId === id).sort((a, b) => a.added - b.added);
+  projects.current = rec;
+  revokeAssets();
+  files.forEach(addRuntimeAsset);
+  ta.value = rec.source; ta.scrollTop = 0;
+  lastResult = compile(ta.value);
+  logMessages(lastResult, { type: "info", text: `Opened "${rec.name}"${files.length ? ` with ${files.length} uploaded file${files.length > 1 ? "s" : ""}` : ""}. Changes save automatically.` });
+  renderEditor();
+  if (!lastResult.errors.length) { loadProgram(lastResult.program); runningSource = ta.value; }
+  updateDirty();
+  document.title = `${rec.name} · Custom DSL Game Engine`;
+  rec.opened = Date.now();
+  store.put("projects", { ...rec }).catch(() => {});
+  remember(id);
+  populateSelect();
+  setSaveStatus(store.persistent ? "✓ Saved" : "⚠ Not saved (☰ → Export)", store.persistent ? "ok" : "warn");
+  resetAssetPanel();
+}
+async function createProject(name, source, fileRecs = []) {
+  await flushSave();
+  const now = Date.now(), rec = { id: newId("p"), name, source, created: now, updated: now };
+  await store.put("projects", rec);
+  for (const [k, f] of fileRecs.entries()) await store.put("assets", { ...f, id: newId("a"), projectId: rec.id, added: now + k });
+  projects.list.push(rec);
+  await openProject(rec.id);
+  return rec;
+}
+function openEntry(value) {
+  if (value.startsWith("proj:")) openProject(value.slice(5));
+  else { remember(null); loadDemo(value.slice(5), false); }
+}
+async function deleteProject(id) {
+  const files = (await store.all("assets")).filter(a => a.projectId === id);
+  for (const f of files) await store.del("assets", f.id);
+  await store.del("projects", id);
+  projects.list = projects.list.filter(p => p.id !== id);
+  if (projects.current && projects.current.id === id) { projects.current = null; projects.dirty = false; loadDemo("quest", true); }
+  else populateSelect();
+}
+function blankScript(name) {
+  return `// ===== ${name.toUpperCase()} =====
+// Start here! Open the 🎨 Assets tab to add objects, sounds and your own files.
+
+TITLE "${name.replace(/"/g, "'")}"
+BACKGROUND #1e293b
+
+ADD CHARACTER hero
+  COLOR #4cc9f0
+  SIZE 24
+  SPEED 4
+  START 300, 200
+`;
+}
+
+/* ---- New Project dialog ---- */
+const DEMO_BLURBS = { quest: "NPC, dialogue and gems", coin: "Collect coins, dodge slimes", slime: "Survive the chasers", treasure: "2-player co-op loot run" };
+const npDlg = document.getElementById("newProjectDlg");
+document.getElementById("npTemplates").innerHTML = [["blank", "Blank", "One player, empty screen"], ...Object.keys(DEMO_LABELS).map(k => [k, DEMO_LABELS[k], DEMO_BLURBS[k]])]
+  .map(([id, label, blurb], k) => `<label class="tpl"><input type="radio" name="tpl" value="${id}" ${k === 0 ? "checked" : ""}><b>${label}</b><span>${blurb}</span></label>`).join("");
+document.getElementById("newProjectBtn").addEventListener("click", () => {
+  const nameEl = document.getElementById("npName");
+  nameEl.value = uniqueProjectName("My Game");
+  npDlg.returnValue = "";
+  npDlg.showModal();
+  nameEl.select();
+});
+npDlg.addEventListener("close", async () => {
+  if (npDlg.returnValue !== "create") return;
+  const name = uniqueProjectName(document.getElementById("npName").value.trim() || "My Game");
+  const tpl = (npDlg.querySelector('input[name="tpl"]:checked') || {}).value || "blank";
+  await createProject(name, tpl === "blank" ? blankScript(name) : DEMOS[tpl]);
+  note("ok", `Created "${name}". It saves automatically. Upload your own images, sounds and fonts in 🎨 Assets → 📁 Files.`);
+});
+
+/* ---- ☰ project menu ---- */
+const pmBtn = document.getElementById("projectMenuBtn"), pmMenu = document.getElementById("projectMenu");
+const closeMenu = () => { pmMenu.hidden = true; pmBtn.setAttribute("aria-expanded", "false"); };
+pmBtn.addEventListener("click", e => { e.stopPropagation(); pmMenu.hidden = !pmMenu.hidden; pmBtn.setAttribute("aria-expanded", String(!pmMenu.hidden)); });
+document.addEventListener("click", e => { if (!pmMenu.hidden && !pmMenu.contains(e.target)) closeMenu(); });
+pmMenu.addEventListener("click", async e => {
+  const b = e.target.closest("[data-pm]");
+  if (!b || b.disabled) return;
+  closeMenu();
+  const cur = projects.current;
+  switch (b.dataset.pm) {
+    case "rename": {
+      const name = (prompt("Rename project", cur.name) || "").trim();
+      if (!name || name === cur.name) break;
+      cur.name = uniqueProjectName(name);
+      document.title = `${cur.name} · Custom DSL Game Engine`;
+      await saveNow(); populateSelect();
+      break;
+    }
+    case "duplicate": {
+      const files = assetLib.list.map(storedFields);
+      const name = uniqueProjectName(cur ? `${cur.name} copy` : `${DEMO_LABELS[projects.demo]} (my copy)`);
+      await createProject(name, ta.value, files);
+      note("ok", `Saved as "${name}". Changes now save automatically.`);
+      break;
+    }
+    case "export": exportProject(); break;
+    case "import": document.getElementById("importInput").click(); break;
+    case "delete": {
+      const n = assetLib.list.length;
+      if (confirm(`Delete "${cur.name}"${n ? ` and its ${n} uploaded file${n > 1 ? "s" : ""}` : ""}? This can't be undone.\n\nTip: ☰ → Export project file first to keep a backup.`)) {
+        await deleteProject(cur.id);
+        note("info", `Deleted "${cur.name}".`);
+      }
+      break;
+    }
+  }
+});
+
+/* ---- export / import (one .game.json file with every upload embedded) ---- */
+const blobToDataURL = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(b); });
+function dataURLToBlob(u) {
+  const [head, data] = u.split(",");
+  const mime = (head.match(/^data:([^;,]+)/) || [])[1] || "application/octet-stream";
+  const bin = atob(data), bytes = new Uint8Array(bin.length);
+  for (let k = 0; k < bin.length; k++) bytes[k] = bin.charCodeAt(k);
+  return new Blob([bytes], { type: mime });
+}
+async function exportProject(returnJSON) {
+  await flushSave();
+  const name = projects.current ? projects.current.name : DEMO_LABELS[projects.demo];
+  const files = [];
+  for (const a of assetLib.list) files.push({ name: a.name, kind: a.kind, mime: a.mime, size: a.size, data: await blobToDataURL(a.blob) });
+  const json = JSON.stringify({ format: PROJECT_FORMAT, version: 1, name, source: ta.value, assets: files, exported: new Date().toISOString() });
+  if (returnJSON) return json;
+  const fileName = (name.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-").toLowerCase() || "game") + ".game.json";
+  const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+  const link = Object.assign(document.createElement("a"), { href: url, download: fileName });
+  document.body.appendChild(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  note("ok", `Exported "${name}"${files.length ? ` with ${files.length} file${files.length > 1 ? "s" : ""}` : ""} as ${fileName}. Bring it back with ☰ → Import project file.`);
+}
+async function importProjectData(data, label) {
+  if (!data || data.format !== PROJECT_FORMAT || typeof data.source !== "string") { note("warn", `"${label}" isn't a project file from this engine.`); return null; }
+  const files = (Array.isArray(data.assets) ? data.assets : [])
+    .filter(a => a && typeof a.data === "string" && ["image", "audio", "font"].includes(a.kind) && /^[A-Za-z_][A-Za-z0-9_]*$/.test(a.name))
+    .map(a => { const blob = dataURLToBlob(a.data); return { name: a.name, kind: a.kind, mime: a.mime || blob.type, size: blob.size, blob }; });
+  const rec = await createProject(uniqueProjectName(String(data.name || "Imported game").slice(0, 60)), data.source, files);
+  note("ok", `Imported "${rec.name}"${files.length ? ` with ${files.length} file${files.length > 1 ? "s" : ""}` : ""}.`);
+  return rec;
+}
+async function importProjectFile(file) {
+  let data = null;
+  try { data = JSON.parse(await file.text()); } catch (_) {}
+  return importProjectData(data, file.name);
+}
+document.getElementById("importInput").addEventListener("change", e => {
+  const f = e.target.files[0];
+  e.target.value = "";
+  if (f) importProjectFile(f);
+});
+
+/* ---- uploading ---- */
+const MAX_UPLOAD = 15 * 1024 * 1024;
+const EXT_KIND = { png: "image", jpg: "image", jpeg: "image", gif: "image", webp: "image", svg: "image", bmp: "image",
+  mp3: "audio", wav: "audio", ogg: "audio", oga: "audio", m4a: "audio", aac: "audio", flac: "audio", webm: "audio",
+  ttf: "font", otf: "font", woff: "font", woff2: "font" };
+function kindOf(file) {
+  const ext = (file.name.split(".").pop() || "").toLowerCase();
+  if (EXT_KIND[ext]) return EXT_KIND[ext];
+  if (/^image\//.test(file.type)) return "image";
+  if (/^audio\//.test(file.type)) return "audio";
+  if (/font/.test(file.type)) return "font";
+  return null;
+}
+// "My Cool Sprite.png" -> My_Cool_Sprite (a valid, unused script name)
+function uploadName(fileName) {
+  let base = fileName.replace(/\.[^.]+$/, "").replace(/[^A-Za-z0-9_]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 32) || "file";
+  if (/^\d/.test(base)) base = "file_" + base;
+  if (NAME_KEYWORDS.has(base.toUpperCase())) base += "_file";
+  return uniqueName(base, n => assetLib.byName[n.toLowerCase()]);
+}
+async function handleFiles(fileList, { assignTo = null } = {}) {
+  const files = [...fileList];
+  for (const f of files.filter(f => /\.json$/i.test(f.name))) await importProjectFile(f);
+  const media = files.filter(f => !/\.json$/i.test(f.name));
+  if (!media.length) return [];
+  let madeProject = "";
+  if (!projects.current) {          // uploads belong to a project, so a demo becomes one
+    const name = uniqueProjectName(`${DEMO_LABELS[projects.demo]} (my copy)`);
+    await createProject(name, ta.value);
+    madeProject = ` Uploads are saved with a project, so this demo is now your project "${name}".`;
+  }
+  const added = [], skipped = [];
+  for (const [k, f] of media.entries()) {
+    const kind = kindOf(f);
+    if (!kind) { skipped.push(`${f.name} (not an image, sound or font)`); continue; }
+    if (f.size > MAX_UPLOAD) { skipped.push(`${f.name} (over 15 MB)`); continue; }
+    const rec = { id: newId("a"), projectId: projects.current.id, name: uploadName(f.name), kind, mime: f.type || "", size: f.size, blob: f, added: Date.now() + k };
+    try { await store.put("assets", rec); } catch (e) { skipped.push(`${f.name} (${e.message})`); continue; }
+    added.push(addRuntimeAsset(rec));
+  }
+  if (added[0]) assetUI.sel.files = added[0].key;
+  // Recompile so lines that mention the new names resolve.
+  lastResult = compile(ta.value);
+  renderEditor();
+  liveApply();
+  const summary = (added.length ? `Uploaded ${added.map(a => `${a.name} (${a.kind})`).join(", ")}.` : "Nothing was uploaded.")
+    + (skipped.length ? ` Skipped: ${skipped.join("; ")}.` : "") + madeProject;
+  const img = added.find(a => a.kind === "image"), target = assignTo && lastResult.program.byName[assignTo];
+  if (img && target) editLines(L => setBlockProp(L, target.line, "IMAGE", img.name), { full: true, note: `${summary} ${target.name} now uses it.` });
+  else { note(added.length ? "ok" : "warn", summary); refreshAssets(true); }
+  return added;
+}
+async function deleteUploaded(a) {
+  const used = usesOf(a);
+  if (used.length && !confirm(`"${a.name}" is used on line ${used.join(", ")}. Delete it anyway? Those lines will show errors.`)) return;
+  await store.del("assets", a.id);
+  URL.revokeObjectURL(a.url);
+  if (a.font) document.fonts.delete(a.font);
+  assetLib.list = assetLib.list.filter(x => x !== a);
+  delete assetLib.byName[a.key];
+  assetUI.sel.files = null;
+  lastResult = compile(ta.value);
+  renderEditor();
+  note("info", `Deleted ${a.name}.`);
+  refreshAssets(true);
+}
+async function renameUploaded(a, newName) {
+  if (newName === a.name) return;
+  const errEl = document.getElementById("nameErr"), key = newName.toLowerCase();
+  const problem = !/^[A-Za-z_][A-Za-z0-9_]*$/.test(newName) ? "Letters, digits and _ only"
+    : NAME_KEYWORDS.has(newName.toUpperCase()) ? "That's a keyword"
+    : assetLib.byName[key] && assetLib.byName[key] !== a ? "Name already used" : "";
+  if (problem) { if (errEl) errEl.textContent = problem; return; }
+  const oldKey = a.key;
+  // Point every line that uses the file at the new name.
+  const lines = srcLines().map(line => {
+    const code = stripComment(line), m = code.match(/^(\s*)(IMAGE|BACKGROUND_IMAGE|MUSIC|UI_FONT|SOUND)(\s+)(\S+)(.*)$/i);
+    return m && m[4].toLowerCase() === oldKey ? m[1] + m[2] + m[3] + newName + m[5] + line.slice(code.length) : line;
+  });
+  delete assetLib.byName[oldKey];
+  a.name = newName; a.key = key;
+  assetLib.byName[key] = a;
+  await store.put("assets", storedFields(a));
+  assetUI.sel.files = key;
+  const text = lines.join("\n"), msg = `Renamed the file to ${newName}${text !== ta.value ? " and updated the script" : ""}.`;
+  if (text !== ta.value) commit(lines, { full: true, note: msg });
+  else { lastResult = compile(ta.value); note("info", msg); refreshAssets(true); }
+}
+
+// File pickers and drag-and-drop (anywhere on the page).
+const fileInput = document.getElementById("fileInput");
+let pendingAssign = null;
+function pickFiles(accept, assignTo = null) {
+  pendingAssign = assignTo;
+  fileInput.accept = accept || "image/*,audio/*,.ttf,.otf,.woff,.woff2,.json";
+  fileInput.value = "";
+  fileInput.click();
+}
+fileInput.addEventListener("change", () => {
+  const files = [...fileInput.files], assign = pendingAssign;
+  pendingAssign = null;
+  if (files.length) handleFiles(files, { assignTo: assign });
+});
+function openFilesTab() {
+  assetUI.tab = "files";
+  document.querySelectorAll(".atab").forEach(x => x.classList.toggle("active", x.dataset.atab === "files"));
+  showPanel("assets");
+}
+const hasFiles = e => e.dataTransfer && [...e.dataTransfer.types].includes("Files");
+let dragDepth = 0;
+window.addEventListener("dragenter", e => { if (hasFiles(e)) { dragDepth++; document.body.classList.add("dragging"); } });
+window.addEventListener("dragleave", e => { if (hasFiles(e) && --dragDepth <= 0) { dragDepth = 0; document.body.classList.remove("dragging"); } });
+window.addEventListener("dragover", e => { if (hasFiles(e)) e.preventDefault(); });
+window.addEventListener("drop", e => {
+  if (!hasFiles(e)) return;
+  e.preventDefault();
+  dragDepth = 0; document.body.classList.remove("dragging");
+  const files = [...e.dataTransfer.files];
+  if (!files.length) return;
+  const media = files.some(f => !/\.json$/i.test(f.name));
+  handleFiles(files).then(() => { if (media) openFilesTab(); });
+});
+
+async function initProjects(restore) {
+  await store.ready();
+  try { projects.list = await store.all("projects"); } catch (_) { projects.list = []; }
+  let last = null;
+  try { last = localStorage.getItem("dsl-engine:last"); } catch (_) {}
+  // Reopen the last project unless you'd switched to a demo; fall back to the most recently opened one.
+  const recent = [...projects.list].sort((a, b) => (b.opened || 0) - (a.opened || 0))[0];
+  const target = last === "demo" ? null : projects.list.some(p => p.id === last) ? last : recent && recent.opened ? recent.id : null;
+  if (restore && target) await openProject(target);
+  else populateSelect();
+}
+
+/* ============================================ 3.12 BOOT + SELF-TEST */
 function selfTest() {
   // Open index.html?selftest to run: compiles every demo, checks error
   // messages for typical mistakes, and simulates each demo headlessly.
@@ -3292,9 +4075,128 @@ function selfTest() {
   document.getElementById("selftest").hidden = false;
 }
 
+// ?projecttest: async end-to-end test of projects + uploads (uses its own projects, then deletes them).
+async function projectTest() {
+  const out = { ok: true, steps: {} };
+  const pre = document.getElementById("selftest");
+  pre.hidden = false;
+  const step = (k, pass) => { out.steps[k] = pass ? "ok" : "FAILED"; if (!pass) out.ok = false; pre.textContent = "RUNNING " + JSON.stringify(out); };
+  const waitFor = async (fn, ms = 4000) => { const t0 = Date.now(); while (!fn() && Date.now() - t0 < ms) await new Promise(r => setTimeout(r, 20)); return fn(); };
+  const made = [];
+  try {
+    await store.ready();
+    out.persistent = store.persistent;
+    const before = (await store.all("projects")).length;
+    const proj = await createProject("Test Project", blankScript("Test Project"));
+    made.push(proj.id);
+    step("create", projects.current === proj && /ADD CHARACTER hero/.test(ta.value) && demoSelect.value === "proj:" + proj.id);
+    // generated files: a 16x16 magenta PNG, a short 440 Hz WAV, and something unsupported
+    const cv = Object.assign(document.createElement("canvas"), { width: 16, height: 16 });
+    const g = cv.getContext("2d"); g.fillStyle = "#ff00ff"; g.fillRect(0, 0, 16, 16);
+    const png = await new Promise(r => cv.toBlob(r, "image/png"));
+    const n = 800, wav = new DataView(new ArrayBuffer(44 + n * 2));
+    const str = (o, s) => [...s].forEach((c, k) => wav.setUint8(o + k, c.charCodeAt(0)));
+    str(0, "RIFF"); wav.setUint32(4, 36 + n * 2, true); str(8, "WAVE"); str(12, "fmt "); wav.setUint32(16, 16, true);
+    wav.setUint16(20, 1, true); wav.setUint16(22, 1, true); wav.setUint32(24, 8000, true); wav.setUint32(28, 16000, true);
+    wav.setUint16(32, 2, true); wav.setUint16(34, 16, true); str(36, "data"); wav.setUint32(40, n * 2, true);
+    for (let k = 0; k < n; k++) wav.setInt16(44 + k * 2, Math.sin((k / 8000) * 2 * Math.PI * 440) * 12000, true);
+    await handleFiles([new File([png], "Magenta Box.png", { type: "image/png" }), new File([wav.buffer], "boing.wav", { type: "audio/wav" }), new File(["hi"], "notes.txt", { type: "text/plain" })]);
+    step("upload", assetLib.byName.magenta_box && assetLib.byName.boing && assetLib.list.length === 2);
+    step("imageLoads", await waitFor(() => assetLib.byName.magenta_box.ready));
+    const buf = await audioBufferOf(assetLib.byName.boing);
+    step("audioDecodes", buf && buf.duration > 0.05);
+    if (!buf) out.audioDetail = assetLib.byName.boing.failed ? "decode error" : "decode timed out";
+    // use them from the script
+    editLines(L => setBlockProp(L, lastResult.program.byName.hero.line, "IMAGE", "Magenta_Box"));
+    editLines(L => { setTopLine(L, w => w[0].toUpperCase() === "MUSIC", "MUSIC boing 50"); L.push("ITEM coin", "  START 100, 100", "", "ON hero TOUCH coin:", "  SOUND boing"); return L; });
+    step("compileWithFiles", !lastResult.errors.length && lastResult.program.byName.hero.image === "magenta_box" && lastResult.program.music.name === "boing");
+    const bad = compile("PLAYER hero\n  IMAGE magenta_bx");
+    step("typoHint", bad.errors[0] && /did you mean "Magenta_Box"/.test(bad.errors[0].msg));
+    loadProgram(lastResult.program); render();
+    const px = ctx.getImageData(300, 200, 1, 1).data;
+    step("spriteDrawn", px[0] > 200 && px[1] < 60 && px[2] > 200);
+    await saveNow();
+    step("saved", /IMAGE Magenta_Box/.test((await store.get("projects", proj.id)).source));
+    // leave, then reopen from storage
+    loadDemo("coin", true);
+    step("demoClearsFiles", assetLib.list.length === 0 && !projects.current);
+    await openProject(proj.id);
+    step("reopen", assetLib.list.length === 2 && !lastResult.errors.length);
+    await renameUploaded(assetLib.byName.boing, "jump_sfx");
+    step("renameFile", /MUSIC jump_sfx 50/.test(ta.value) && /SOUND jump_sfx/.test(ta.value) && !lastResult.errors.length);
+    // export -> import round trip
+    const imported = await importProjectData(JSON.parse(await exportProject(true)), "test");
+    made.push(imported.id);
+    await waitFor(() => assetLib.byName.magenta_box && assetLib.byName.magenta_box.ready);
+    step("importRoundTrip", projects.current === imported && assetLib.list.length === 2 && !lastResult.errors.length && /IMAGE Magenta_Box/.test(ta.value));
+    // a real font, when the browser lets this page read one
+    const font = await new Promise(res => {
+      try { const x = new XMLHttpRequest(); x.open("GET", "file:///C:/Windows/Fonts/arial.ttf"); x.responseType = "blob"; x.onload = () => res(x.response && x.response.size ? x.response : null); x.onerror = () => res(null); x.send(); } catch (_) { res(null); }
+    });
+    if (font) {
+      await handleFiles([new File([font], "Arial Test.ttf", { type: "font/ttf" })]);
+      const fa = assetLib.byName.arial_test;
+      await waitFor(() => fa.ready || fa.failed);
+      editLines(L => setTopLine(L, w => w[0].toUpperCase() === "UI_FONT", "UI_FONT Arial_Test"));
+      step("font", fa.ready && !lastResult.errors.length && stage.classList.contains("custom-font"));
+    } else out.steps.font = "skipped (page can't read a system font)";
+    // the Files tab renders with real uploads
+    openFilesTab();
+    step("filesTab", assetBody.querySelectorAll(".file-card img, .list-row").length >= 2);
+    showPanel("script");
+    for (const id of made) await deleteProject(id);
+    step("cleanup", (await store.all("projects")).length === before && (await store.all("assets")).every(a => !made.includes(a.projectId)));
+  } catch (ex) { out.ok = false; out.error = ex.message + " " + (ex.stack || "").split("\n")[1]; }
+  document.getElementById("selftest").textContent = JSON.stringify(out, null, 1);
+  document.getElementById("selftest").hidden = false;
+  if (/[?&]download\b/.test(location.search)) downloadResult("projecttest.json", out);
+}
+// Test helpers for a real (non-headless) browser: results arrive as a small downloaded JSON file.
+function downloadResult(name, obj) {
+  const url = URL.createObjectURL(new Blob([JSON.stringify(obj, null, 1)], { type: "application/json" }));
+  const link = Object.assign(document.createElement("a"), { href: url, download: name });
+  document.body.appendChild(link); link.click(); link.remove();
+}
+// ?persisttest=write, then (after closing the browser) ?persisttest=read: do projects survive a restart?
+async function persistTest(mode) {
+  const out = { mode, persistent: store.persistent };
+  try {
+    if (mode === "write") {
+      const cv = Object.assign(document.createElement("canvas"), { width: 8, height: 8 });
+      cv.getContext("2d").fillRect(0, 0, 8, 8);
+      const png = await new Promise(r => cv.toBlob(r, "image/png"));
+      const p = await createProject("Persist Check", blankScript("Persist Check"));
+      await handleFiles([new File([png], "dot.png", { type: "image/png" })]);
+      editLines(L => setBlockProp(L, lastResult.program.byName.hero.line, "IMAGE", "dot"));
+      await saveNow();
+      out.id = p.id; out.files = assetLib.list.length;
+    } else {
+      out.restoredOnStartup = !!(projects.current && projects.current.name === "Persist Check");
+      const p = (await store.all("projects")).find(x => x.name === "Persist Check");
+      out.found = !!p;
+      if (p) {
+        await openProject(p.id);
+        out.files = assetLib.list.length;
+        out.scriptKept = /IMAGE dot/.test(ta.value) && !lastResult.errors.length;
+        await deleteProject(p.id);
+        out.cleanedUp = !(await store.all("projects")).some(x => x.name === "Persist Check");
+      }
+    }
+  } catch (ex) { out.error = ex.message; }
+  downloadResult(`persisttest-${mode}.json`, out);
+}
+
+populateSelect();
 loadDemo("quest", true);
 requestAnimationFrame(frame);
 if (/[?&]selftest\b/.test(location.search)) { selfTest(); loadDemo("quest", true); }
+initProjects(!/[?&](selftest|preview|assets|projecttest)\b/.test(location.search))
+  .then(() => {
+    if (/[?&]projecttest\b/.test(location.search)) projectTest();
+    const pt = location.search.match(/[?&]persisttest=(write|read)/);
+    if (pt) persistTest(pt[1]);
+    if (/[?&]newproject\b/.test(location.search)) document.getElementById("newProjectBtn").click();   // screenshots
+  });
 // ?assets=objects|sounds|ui opens the Assets panel on that tab (handy for screenshots).
 {
   const m = location.search.match(/[?&]assets(?:=(\w+))?/);
