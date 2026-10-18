@@ -21,8 +21,10 @@
        3.3 Helpers (did-you-mean, colors)
        3.4 Compiler (line-based, indentation-aware parser -> program object)
        3.5 Audio (Web Audio 8-bit synth)
-       3.6 Engine (world, update, collision, events, state machine)
-       3.7 Renderer (low-res pixel buffer upscaled with hard edges)
+       3.6 Engine (world, update, collision, events, state machine,
+           dialogue: speech bubbles, SAY announcements, dialogue boxes)
+       3.7 Renderer (low-res pixel buffer upscaled with hard edges,
+           plus full-resolution speech bubbles)
        3.8 Editor UI (line numbers, highlighting, tab support, live compile)
        3.9 Boot + self-test hook (?selftest)
   ============================================================================
@@ -260,6 +262,38 @@
   .banner.win h2 { color: #ffd166; }
   .banner.lose h2 { color: #ff5c7a; }
   .banner.start h2 { color: #8be9fd; }
+
+  /* SAY "...": centered announcement that pops in, then floats up and fades */
+  .announce {
+    position: absolute; left: 50%; top: 40%;
+    transform: translate(-50%, -50%);
+    max-width: 84%; text-align: center;
+    font-weight: 800; font-size: clamp(16px, 3.6vw, 30px); letter-spacing: 1px;
+    text-shadow: 3px 3px 0 #000, 0 0 18px rgba(139,108,255,.75);
+    opacity: 0;
+  }
+  .announce.hidden { display: none; }
+  .announce.go { animation: announce 2.6s ease-out forwards; }
+  @keyframes announce {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(.6); }
+    12%  { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+    20%  { transform: translate(-50%, -50%) scale(1); }
+    80%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -62%) scale(1); }
+  }
+  /* ADD PROMPT / ADD DIALOGUE: retro RPG text box with typewriter text */
+  .prompt {
+    position: absolute; left: 5%; right: 5%; bottom: 5%;
+    min-height: 22%; padding: 2.2% 3% 3%;
+    background: rgba(9,12,22,.93);
+    border: 3px solid #e8edf7; border-radius: 8px;
+    box-shadow: 0 0 0 3px #090c16, 0 10px 30px rgba(0,0,0,.5);
+    font-size: clamp(12px, 2.3vw, 17px); line-height: 1.45;
+    transition: opacity .3s, transform .3s;
+  }
+  .prompt.hidden { opacity: 0; transform: translateY(8px); }
+  .prompt p { margin: 0; white-space: pre-wrap; }
+  .prompt-key { position: absolute; right: 3%; bottom: 7%; font-size: .75em; color: #ffd166; animation: blink 1s steps(2, start) infinite; }
   .controls-hint { color: var(--muted); font-size: 12.5px; text-align: center; }
   .controls-hint .kbd { margin: 0 1px; }
   .dirty-note { color: var(--warn); font-size: 12.5px; min-height: 18px; }
@@ -277,6 +311,7 @@
 <header>
   <h1><span class="logo"></span>Custom DSL Game Engine</h1>
   <select id="demoSelect" title="Load a demo script">
+    <option value="quest">Village Quest</option>
     <option value="coin">Coin Catcher</option>
     <option value="slime">Slime Dodger</option>
     <option value="treasure">Treasure Rush</option>
@@ -327,6 +362,13 @@
           <tr><td>AI wander</td><td>ENEMY: roam and bounce off walls</td></tr>
           <tr><td>RESPAWN</td><td>Jump to a new random spot when touched (items vanish without it)</td></tr>
         </table>
+        <h4>ADD declarations</h4>
+        <table>
+          <tr><td>ADD CHARACTER Hero</td><td>Same as PLAYER Hero</td></tr>
+          <tr><td>ADD NPC Elder</td><td>A solid character you can walk up to and talk with (AI wander works too)</td></tr>
+          <tr><td>ADD ITEM / ADD ENEMY</td><td>Same as ITEM / ENEMY</td></tr>
+          <tr><td>ADD DIALOGUE intro</td><td>A text box (or ADD PROMPT). Indent: TEXT "...", then DURATION 3 or WAIT_FOR_KEY space</td></tr>
+        </table>
         <h4>Rules</h4>
         <table>
           <tr><td>ON hero TOUCH coin:</td><td>Run the indented actions when they touch</td></tr>
@@ -340,7 +382,14 @@
           <tr><td>RESET hero</td><td>Send an entity back to its START</td></tr>
           <tr><td>GAME_OVER</td><td>End the game (you lose)</td></tr>
           <tr><td>WIN_GAME</td><td>End the game (you win)</td></tr>
+          <tr><td>Elder SAYS "Hi!"</td><td>Speech bubble over that character's head</td></tr>
+          <tr><td>SAY "Level up!"</td><td>Big centered announcement</td></tr>
+          <tr><td>SHOW DIALOGUE intro</td><td>Open a dialogue box. WAIT_FOR_KEY ones pause the game, and the rest of the rule runs after Space</td></tr>
+          <tr><td>ADD SCORE 10</td><td>Same as SCORE + 10 (also ADD LIFE, ADD LIVES 2)</td></tr>
+          <tr><td>LOSE LIFE</td><td>Same as LIVES - 1 (also LOSE LIVES 2, LOSE SCORE 5)</td></tr>
+          <tr><td>MOVE Hero TO 80, 200</td><td>Teleport an entity to x, y</td></tr>
         </table>
+        <p>SAYS, SAY and SHOW DIALOGUE can also sit unindented at the top level. They play when the game starts.</p>
         <h4>Comments</h4>
         <p>Anything after <code>//</code> is ignored. Indent with 2 or 4 spaces.</p>
       </div>
@@ -358,6 +407,11 @@
             <span id="hudScore">SCORE 0</span>
             <span class="hud-title" id="hudTitle"></span>
             <span class="hearts" id="hudLives"></span>
+          </div>
+          <div class="announce hidden" id="announce"></div>
+          <div class="prompt hidden" id="prompt">
+            <p id="promptText"></p>
+            <span class="prompt-key" id="promptKey" hidden>▼ SPACE</span>
           </div>
           <div class="banner start" id="banner">
             <h2 id="bannerTitle">LOADING</h2>
@@ -383,6 +437,74 @@
 "use strict";
 /* ===================================================== 3.1 DEMO SCRIPTS */
 const DEMOS = {
+quest: `// ===== VILLAGE QUEST =====
+// Talk to the Elder, then gather 3 green gems. Watch out for brambles!
+
+TITLE "Village Quest"
+BACKGROUND #1e293b
+
+ADD PROMPT intro
+  TEXT "The sacred grove is wilting... Walk up to the Elder to hear what's wrong."
+  WAIT_FOR_KEY space
+
+ADD DIALOGUE tip
+  TEXT "Tip: the purple brambles sting. Keep your distance!"
+  DURATION 3
+
+ADD DIALOGUE thanks
+  TEXT "The grove blooms again. The whole village thanks you, Hero!"
+  WAIT_FOR_KEY space
+
+ADD CHARACTER Hero
+  COLOR cyan
+  SIZE 24
+  SPEED 4
+  START 80, 200
+  CONTROLS arrows
+
+ADD NPC Elder
+  COLOR gold
+  SIZE 26
+  START 300, 200
+
+ADD ITEM Gem
+  COLOR lime
+  SIZE 16
+  COUNT 3
+  RESPAWN
+
+ADD ENEMY Bramble
+  COLOR #b5179e
+  SIZE 22
+  SPEED 1.2
+  COUNT 2
+  AI wander
+
+// Unindented dialogue plays as soon as the game starts:
+SHOW DIALOGUE intro
+
+ON Hero TOUCH Elder:
+  Elder SAYS "Gather 3 green gems to save the grove!"
+  SHOW DIALOGUE tip
+
+ON Hero TOUCH Gem:
+  SCORE + 1
+  SOUND pickup
+  Hero SAYS "Found one!"
+
+ON Hero TOUCH Bramble:
+  LOSE LIFE
+  SOUND hit
+  Hero SAYS "Ouch, thorns!"
+  MOVE Hero TO 80, 200
+
+WHEN SCORE REACHES 3:
+  SAY "All 3 gems found!"
+  Elder SAYS "You did it, Hero!"
+  SHOW DIALOGUE thanks
+  WIN_GAME
+`,
+
 coin: `// ===== COIN CATCHER =====
 // Grab the gold, dodge the slimes. Reach 150 points to win!
 
@@ -572,20 +694,24 @@ WHEN SCORE REACHES 200:
 };
 
 /* =============================================== 3.2 LANGUAGE TABLES */
-const ENTITY_TYPES = ["PLAYER", "ITEM", "ENEMY"];
-const TOP_LEVEL = ["TITLE", "BACKGROUND", "LIVES", "PLAYER", "ITEM", "ENEMY", "ON", "WHEN"];
+const ENTITY_TYPES = ["PLAYER", "ITEM", "ENEMY", "NPC"];
+// "ADD <kind> <name>" spellings -> internal kind (PROMPT is a dialogue box, not an entity).
+const ADD_KINDS = { CHARACTER: "PLAYER", PLAYER: "PLAYER", NPC: "NPC", ITEM: "ITEM", ENEMY: "ENEMY", PROMPT: "PROMPT", DIALOGUE: "PROMPT" };
+const TOP_LEVEL = ["TITLE", "BACKGROUND", "LIVES", "ADD", "PLAYER", "ITEM", "ENEMY", "NPC", "ON", "WHEN", "SAY", "SHOW"];
 // Which entity types each property is allowed on.
+const ALL_TYPES = ["PLAYER", "ITEM", "ENEMY", "NPC"];
 const PROPS = {
-  COLOR:    ["PLAYER", "ITEM", "ENEMY"],
-  SIZE:     ["PLAYER", "ITEM", "ENEMY"],
-  SPEED:    ["PLAYER", "ITEM", "ENEMY"],
-  START:    ["PLAYER", "ITEM", "ENEMY"],
+  COLOR:    ALL_TYPES,
+  SIZE:     ALL_TYPES,
+  SPEED:    ALL_TYPES,
+  START:    ALL_TYPES,
   CONTROLS: ["PLAYER"],
-  COUNT:    ["ITEM", "ENEMY"],
-  AI:       ["ENEMY"],
-  RESPAWN:  ["PLAYER", "ITEM", "ENEMY"],
+  COUNT:    ["ITEM", "ENEMY", "NPC"],
+  AI:       ["ENEMY", "NPC"],
+  RESPAWN:  ALL_TYPES,
 };
-const ACTIONS = ["SCORE", "LIVES", "SOUND", "RESET", "GAME_OVER", "WIN_GAME"];
+const PROMPT_PROPS = ["TEXT", "DURATION", "WAIT_FOR_KEY"];
+const ACTIONS = ["SCORE", "LIVES", "SOUND", "RESET", "GAME_OVER", "WIN_GAME", "SAY", "SHOW", "ADD", "LOSE", "MOVE"];
 const SOUNDS = ["pickup", "hit", "win", "lose"];
 const AI_MODES = ["chase", "wander"];
 const CONTROL_SCHEMES = ["arrows", "wasd"];
@@ -594,6 +720,7 @@ const DEFAULTS = {
   PLAYER: { color: "#4cc9f0", size: 24, speed: 3.5, ai: null },
   ITEM:   { color: "gold",    size: 14, speed: 0,   ai: null },
   ENEMY:  { color: "#e63946", size: 24, speed: 1.5, ai: "wander" },
+  NPC:    { color: "#e9c46a", size: 26, speed: 0,   ai: null },
 };
 const W = 600, H = 400;     // logical resolution
 const PX = 2;               // logical pixels per "art pixel" (300 x 200 art buffer)
@@ -685,6 +812,8 @@ function compile(src) {
   const program = {
     title: "Untitled Game", background: "#1b1f2a", lives: 3,
     entities: [], byName: {}, events: [], goals: [],
+    prompts: {},   // dialogue boxes by lower-case name
+    intro: [],     // top-level SAYS / SAY / SHOW lines, run when the game starts
   };
   const errors = [], warnings = [];
   const err  = (line, msg, hint) => errors.push({ line, msg, hint });
@@ -697,6 +826,139 @@ function compile(src) {
   const lines = src.split("\n");
 
   const num = (s) => (/^-?\d+(\.\d+)?$/.test(s) ? parseFloat(s) : NaN);
+  const second = (w) => (w[1] || "").toUpperCase();   // 2nd word of a line, upper-cased
+  const promptRefs = [];  // SHOW DIALOGUE <name>, checked at the end
+  const allNames = {};    // entities and dialogues share one namespace: key -> line
+  const RESERVED = new Set([...TOP_LEVEL, ...ACTIONS, ...Object.keys(PROPS), ...Object.keys(ADD_KINDS),
+    ...PROMPT_PROPS, "TOUCH", "SAYS", "TO", "LIFE"]);
+  const EXAMPLE = { PLAYER: "hero", ITEM: "coin", ENEMY: "slime", NPC: "elder", PROMPT: "intro" };
+
+  // Validates the name after "PLAYER", "ADD NPC", "ADD DIALOGUE"...; returns it or null.
+  function claimName(ln, label, rest, example) {
+    const name = (rest[0] || "").replace(/:$/, "");
+    if (!name) { err(ln, `${label} needs a name.`, `Try: ${label} ${example}`); return null; }
+    if (rest.length > 1) { err(ln, `Names can't contain spaces ("${rest.join(" ")}").`, `Try: ${label} ${rest.join("_")}`); return null; }
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) { err(ln, `"${name}" isn't a valid name.`, `Use letters, digits and _ only, starting with a letter.`); return null; }
+    if (RESERVED.has(name.toUpperCase())) { err(ln, `"${name}" is a keyword and can't be used as a name.`, `Pick another name, e.g. my_${name.toLowerCase()}`); return null; }
+    const key = name.toLowerCase();
+    if (allNames[key]) { err(ln, `"${name}" is already defined on line ${allNames[key]}.`, `Give everything a unique name.`); return null; }
+    allNames[key] = ln;
+    return name;
+  }
+
+  function defineEntity(ln, type, label, rest) {
+    const name = claimName(ln, label, rest, EXAMPLE[type]);
+    if (!name) return;
+    const d = DEFAULTS[type], key = name.toLowerCase();
+    const ent = {
+      type, name, key, line: ln,
+      color: d.color, size: d.size, speed: d.speed, start: null,
+      controls: "both", count: 1, ai: d.ai, aiTarget: null, aiLine: ln, respawn: false,
+    };
+    program.entities.push(ent);
+    program.byName[key] = ent;
+    block = { kind: "entity", ent };
+  }
+
+  // Parses one action line into `list`. Shared by ON / WHEN rules and top-level dialogue.
+  function parseAction(ln, text, list) {
+    const words = text.split(/\s+/), head = words[0].toUpperCase();
+    const rest = text.slice(words[0].length).trim();
+    const second = (words[1] || "").toUpperCase();
+
+    // <character> SAYS "<message>"
+    if ((second === "SAYS" || second === "SAY") && !ACTIONS.includes(head)) {
+      const m = text.match(/^(\S+)\s+SAYS?\s+"([^"]*)"\s*$/i);
+      if (!m) {
+        const said = text.replace(/^\S+\s+SAYS?\s*/i, "").replace(/"/g, "");
+        err(ln, `What ${words[0]} says must be in double quotes.`, `Try: ${words[0]} SAYS "${said || "Hello!"}"`); return;
+      }
+      if (!m[2].trim()) warn(ln, `${words[0]} says nothing (the message is empty).`);
+      list.push({ op: "SAYS", who: m[1].toLowerCase(), value: m[2], line: ln });
+      nameRefs.push({ name: m[1], line: ln, what: "speaker" });
+      return;
+    }
+    if (!ACTIONS.includes(head)) {
+      if (head === "GAME" && second === "OVER") { err(ln, `Write GAME_OVER with an underscore.`, `Try: GAME_OVER`); return; }
+      if (head === "WIN" && second === "GAME") { err(ln, `Write WIN_GAME with an underscore.`, `Try: WIN_GAME`); return; }
+      if (PROPS[head]) { err(ln, `${head} is a property; it belongs under a PLAYER, ITEM, ENEMY or NPC, not inside a rule.`); return; }
+      err(ln, `Unknown action "${words[0]}"${didYouMean(head, ACTIONS)}`,
+        suggest(head, ACTIONS) ? undefined : `Actions: ${ACTIONS.join(", ")}, or <name> SAYS "..."`);
+      return;
+    }
+    switch (head) {
+      case "SCORE":
+      case "LIVES": {
+        const m = rest.match(/^([+-])\s*(\d+)$/);
+        if (!m) { err(ln, `${head} needs + or - and a whole number.`, `Try: ${head} ${head === "SCORE" ? "+ 10" : "- 1"}`); break; }
+        list.push({ op: head, value: (m[1] === "-" ? -1 : 1) * parseInt(m[2], 10), line: ln });
+        break;
+      }
+      case "ADD":
+      case "LOSE": {
+        // ADD SCORE 10 / ADD 10 POINTS / ADD LIFE / LOSE LIFE / LOSE LIVES 2 / LOSE SCORE 5
+        const m = text.match(/^(ADD|LOSE)\s+(?:(\d+)\s+)?(SCORE|POINTS?|LIFE|LIVES)(?:\s+(\d+))?$/i);
+        if (!m) {
+          const noun = words.slice(1).find(w => !/^\d+$/.test(w)) || "";
+          const s = noun && suggest(noun.toUpperCase(), ["SCORE", "POINTS", "LIFE", "LIVES"]);
+          err(ln, `${head} works with SCORE or LIFE${s ? `, did you mean "${head} ${s}"?` : "."}`,
+            head === "ADD" ? `Try: ADD SCORE 10  or  ADD LIFE` : `Try: LOSE LIFE  or  LOSE LIVES 2`);
+          break;
+        }
+        const noun = m[3].toUpperCase(), isLife = noun === "LIFE" || noun === "LIVES";
+        if (m[2] && m[4]) { err(ln, `Give the number only once.`, `Try: ${head} ${noun} ${m[4]}`); break; }
+        const amt = m[2] || m[4] ? parseInt(m[2] || m[4], 10) : (noun === "LIFE" ? 1 : NaN);
+        if (isNaN(amt)) { err(ln, `${head} ${noun} needs a number.`, `Try: ${head} ${noun} ${isLife ? 2 : 10}`); break; }
+        list.push({ op: isLife ? "LIVES" : "SCORE", value: (head === "LOSE" ? -1 : 1) * amt, line: ln });
+        break;
+      }
+      case "SOUND": {
+        const s = (words[1] || "").toLowerCase();
+        if (!SOUNDS.includes(s) || words.length > 2)
+          err(ln, `Unknown sound "${words.slice(1).join(" ")}"${s ? didYouMean(s, SOUNDS) : "."}`, `Sounds: ${SOUNDS.join(", ")}`);
+        else list.push({ op: "SOUND", value: s, line: ln });
+        break;
+      }
+      case "RESET": {
+        if (words.length !== 2) { err(ln, `RESET needs one entity name.`, `Try: RESET hero`); break; }
+        list.push({ op: "RESET", value: words[1].toLowerCase(), line: ln });
+        nameRefs.push({ name: words[1], line: ln, what: "RESET target" });
+        break;
+      }
+      case "MOVE": {
+        const m = text.match(/^MOVE\s+(\S+)\s+TO\s+(-?\d+(?:\.\d+)?)\s*,?\s*(-?\d+(?:\.\d+)?)$/i);
+        if (!m) {
+          const who = words[1] && words[1].toUpperCase() !== "TO" ? words[1] : "hero";
+          err(ln, `MOVE works like: MOVE <character> TO <x>, <y>`, `Try: MOVE ${who} TO 300, 200`); break;
+        }
+        list.push({ op: "MOVE", value: m[1].toLowerCase(), x: Math.max(0, Math.min(W, +m[2])), y: Math.max(0, Math.min(H, +m[3])), line: ln });
+        nameRefs.push({ name: m[1], line: ln, what: "MOVE target" });
+        break;
+      }
+      case "SAY": {
+        const m = rest.match(/^"([^"]*)"$/);
+        if (!m) { err(ln, `SAY needs its message in double quotes.`, `Try: SAY "${rest.replace(/"/g, "") || "Level up!"}"`); break; }
+        list.push({ op: "ANNOUNCE", value: m[1], line: ln });
+        break;
+      }
+      case "SHOW": {
+        if (second !== "DIALOGUE" && second !== "PROMPT") {
+          const s = second && suggest(second, ["DIALOGUE", "PROMPT"]);
+          err(ln, second ? `Can't SHOW "${words[1]}"${s ? `, did you mean "${s}"?` : "."}` : `SHOW needs DIALOGUE and a name.`, `Try: SHOW DIALOGUE intro`);
+          break;
+        }
+        if (words.length !== 3) { err(ln, `SHOW ${second} needs one name.`, `Try: SHOW ${second} intro`); break; }
+        list.push({ op: "SHOW", value: words[2].toLowerCase(), line: ln });
+        promptRefs.push({ name: words[2], line: ln });
+        break;
+      }
+      case "GAME_OVER":
+      case "WIN_GAME":
+        if (rest) warn(ln, `${head} doesn't take a value; "${rest}" is ignored.`);
+        list.push({ op: head, line: ln });
+        break;
+    }
+  }
 
   for (let i = 0; i < lines.length; i++) {
     const ln = i + 1;
@@ -732,25 +994,29 @@ function compile(src) {
           err(ln, `LIVES needs a whole number from 1 to 99${rest ? `, got "${rest}"` : ""}.`, `Try: LIVES 3`);
         else program.lives = n;
       }
-      else if (ENTITY_TYPES.includes(head)) {
-        const name = (words[1] || "").replace(/:$/, "");
-        if (!name) { err(ln, `${head} needs a name.`, `Try: ${head} ${head === "PLAYER" ? "hero" : head === "ITEM" ? "coin" : "slime"}`); continue; }
-        if (words.length > 2) { err(ln, `Entity names can't contain spaces ("${words.slice(1).join(" ")}").`, `Try: ${head} ${words.slice(1).join("_")}`); continue; }
-        if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) { err(ln, `"${name}" isn't a valid name.`, `Use letters, digits and _ only, starting with a letter.`); continue; }
-        const key = name.toLowerCase();
-        if ([...TOP_LEVEL, ...ACTIONS, ...Object.keys(PROPS), "TOUCH"].includes(name.toUpperCase())) {
-          err(ln, `"${name}" is a keyword and can't be used as a name.`, `Pick another name, e.g. my_${key}`); continue;
+      else if (head === "ADD") {
+        const kindWord = second(words), kind = ADD_KINDS[kindWord];
+        if (!kindWord) err(ln, `ADD needs something to add.`, `Try: ADD CHARACTER hero, ADD NPC elder, ADD ITEM coin or ADD DIALOGUE intro`);
+        else if (["SCORE", "POINTS", "LIFE", "LIVES"].includes(kindWord) || /^\d+$/.test(kindWord))
+          err(ln, `"${text}" is an action and must be indented under an ON ... TOUCH or WHEN rule.`, `Add 2 spaces in front: "  ${text}"`);
+        else if (!kind) {
+          const s = suggest(kindWord, Object.keys(ADD_KINDS));
+          err(ln, `Can't ADD "${words[1]}"${s ? `, did you mean "${s}"?` : "."}`, s ? undefined : `You can ADD: ${Object.keys(ADD_KINDS).join(", ")}`);
         }
-        if (program.byName[key]) { err(ln, `"${name}" is already defined on line ${program.byName[key].line}.`, `Give each entity a unique name.`); continue; }
-        const d = DEFAULTS[head];
-        const ent = {
-          type: head, name, key, line: ln,
-          color: d.color, size: d.size, speed: d.speed, start: null,
-          controls: "both", count: 1, ai: d.ai, aiTarget: null, aiLine: ln, respawn: false,
-        };
-        program.entities.push(ent);
-        program.byName[key] = ent;
-        block = { kind: "entity", ent };
+        else if (kind === "PROMPT") {
+          const name = claimName(ln, `ADD ${kindWord}`, words.slice(2), "intro");
+          if (name) {
+            const pr = { name, key: name.toLowerCase(), text: "", duration: null, waitKey: false, line: ln };
+            program.prompts[pr.key] = pr;
+            block = { kind: "prompt", prompt: pr };
+          }
+        }
+        else defineEntity(ln, kind, `ADD ${kindWord}`, words.slice(2));
+      }
+      else if (ENTITY_TYPES.includes(head)) defineEntity(ln, head, head, words.slice(1));
+      else if (head === "SAY" || head === "SHOW" || /^SAYS?$/i.test(words[1] || "")) {
+        // Unindented dialogue plays once, as soon as the game starts.
+        parseAction(ln, text, program.intro);
       }
       else if (head === "ON") {
         const m = text.match(/^ON\s+(\S+)\s+(\S+)\s+([^\s:]+)\s*(:?)\s*$/i);
@@ -784,7 +1050,7 @@ function compile(src) {
       else {
         const s = suggest(head, TOP_LEVEL);
         err(ln, `Unknown command "${words[0]}"${s ? `, did you mean "${s}"?` : "."}`,
-          s ? undefined : `Lines start with TITLE, BACKGROUND, LIVES, PLAYER, ITEM, ENEMY, ON or WHEN.`);
+          s ? undefined : `Lines start with TITLE, BACKGROUND, LIVES, ADD, PLAYER, ITEM, ENEMY, NPC, ON, WHEN, SAY, SHOW or <name> SAYS.`);
       }
       continue;
     }
@@ -800,6 +1066,29 @@ function compile(src) {
     else if (indent !== blockIndent)
       warn(ln, `Indentation changed from ${blockIndent} to ${indent} spaces inside the same block.`, `Line every property up the same way.`);
 
+    if (block.kind === "prompt") {
+      const pr = block.prompt;
+      if (head === "TEXT") {
+        const m = rest.match(/^"([^"]*)"$/);
+        if (!m) err(ln, `TEXT needs its message in double quotes.`, `Try: TEXT "${rest.replace(/"/g, "") || "Hello!"}"`);
+        else pr.text = m[1];
+      } else if (head === "DURATION") {
+        const n = num(rest.replace(/\s*(s|secs?|seconds?)$/i, ""));
+        if (isNaN(n) || n < 0.5 || n > 60) err(ln, `DURATION needs a number of seconds from 0.5 to 60${rest ? `, got "${rest}"` : ""}.`, `Try: DURATION 3`);
+        else pr.duration = n;
+      } else if (head === "WAIT_FOR_KEY") {
+        const k = (words[1] || "").toLowerCase();
+        if (k !== "space" || words.length > 2) err(ln, `WAIT_FOR_KEY only supports "space"${k ? `, got "${words.slice(1).join(" ")}"` : ""}.`, `Try: WAIT_FOR_KEY space`);
+        else pr.waitKey = true;
+      } else if (head === "WAIT" && second(words) === "FOR") {
+        err(ln, `Write WAIT_FOR_KEY with underscores.`, `Try: WAIT_FOR_KEY space`);
+      } else {
+        const s = suggest(head, PROMPT_PROPS);
+        err(ln, `Unknown dialogue property "${words[0]}"${s ? `, did you mean "${s}"?` : "."}`, s ? undefined : `Dialogue properties: ${PROMPT_PROPS.join(", ")}`);
+      }
+      continue;
+    }
+
     if (block.kind === "entity") {
       const ent = block.ent;
       if (!PROPS[head]) {
@@ -809,7 +1098,7 @@ function compile(src) {
         continue;
       }
       if (!PROPS[head].includes(ent.type)) {
-        err(ln, `${head} only works on ${PROPS[head].join(" / ")}, but "${ent.name}" is ${ent.type === "ENEMY" ? "an" : "a"} ${ent.type}.`); continue;
+        err(ln, `${head} only works on ${PROPS[head].join(" / ")}, but "${ent.name}" is ${ent.type === "PLAYER" ? "a" : "an"} ${ent.type}.`); continue;
       }
       switch (head) {
         case "COLOR":
@@ -875,42 +1164,19 @@ function compile(src) {
     }
 
     // Inside a rule (ON ... TOUCH or WHEN SCORE ...): actions.
-    const rule = block.rule;
-    if (!ACTIONS.includes(head)) {
-      if (head === "GAME" && (words[1] || "").toUpperCase() === "OVER") { err(ln, `Write GAME_OVER with an underscore.`, `Try: GAME_OVER`); continue; }
-      if (head === "WIN" && (words[1] || "").toUpperCase() === "GAME") { err(ln, `Write WIN_GAME with an underscore.`, `Try: WIN_GAME`); continue; }
-      if (PROPS[head]) { err(ln, `${head} is a property; it belongs under a PLAYER, ITEM or ENEMY, not inside a rule.`); continue; }
-      err(ln, `Unknown action "${words[0]}"${didYouMean(head, ACTIONS)}`,
-        suggest(head, ACTIONS) ? undefined : `Actions: ${ACTIONS.join(", ")}`);
-      continue;
-    }
-    switch (head) {
-      case "SCORE":
-      case "LIVES": {
-        const m = rest.match(/^([+-])\s*(\d+)$/);
-        if (!m) { err(ln, `${head} needs + or - and a whole number.`, `Try: ${head} ${head === "SCORE" ? "+ 10" : "- 1"}`); break; }
-        rule.actions.push({ op: head, value: (m[1] === "-" ? -1 : 1) * parseInt(m[2], 10), line: ln });
-        break;
-      }
-      case "SOUND": {
-        const s = (words[1] || "").toLowerCase();
-        if (!SOUNDS.includes(s) || words.length > 2)
-          err(ln, `Unknown sound "${words.slice(1).join(" ")}"${s ? didYouMean(s, SOUNDS) : "."}`, `Sounds: ${SOUNDS.join(", ")}`);
-        else rule.actions.push({ op: "SOUND", value: s, line: ln });
-        break;
-      }
-      case "RESET": {
-        if (words.length !== 2) { err(ln, `RESET needs one entity name.`, `Try: RESET hero`); break; }
-        rule.actions.push({ op: "RESET", value: words[1].toLowerCase(), line: ln });
-        nameRefs.push({ name: words[1], line: ln, what: "RESET target" });
-        break;
-      }
-      case "GAME_OVER":
-      case "WIN_GAME":
-        if (rest) warn(ln, `${head} doesn't take a value; "${rest}" is ignored.`);
-        rule.actions.push({ op: head, line: ln });
-        break;
-    }
+    parseAction(ln, text, block.rule.actions);
+  }
+
+  const promptNames = Object.values(program.prompts).map(p => p.name);
+  for (const r of promptRefs) {
+    if (!program.prompts[r.name.toLowerCase()])
+      err(r.line, `Unknown dialogue "${r.name}"${didYouMean(r.name, promptNames)}`,
+        promptNames.length ? `Defined dialogues: ${promptNames.join(", ")}` : `Define it first:\nADD DIALOGUE ${r.name}\n  TEXT "Hello!"`);
+  }
+  for (const p of Object.values(program.prompts)) {
+    if (!p.text) warn(p.line, `Dialogue "${p.name}" has no TEXT.`, `Indent a line like: TEXT "Hello!"`);
+    if (p.waitKey && p.duration) warn(p.line, `"${p.name}" has both DURATION and WAIT_FOR_KEY; it will wait for Space.`);
+    if (!p.waitKey && !p.duration) p.duration = 3;
   }
 
   /* ---------- whole-program checks ---------- */
@@ -993,6 +1259,24 @@ const SFX = {
     tone(110, t + 0.8, 0.9, { type: "square", vol: 0.06, to: 41 });
   },
 };
+// RPG-style dialogue bleeps: a few quick square blips around a voice pitch.
+function blip(freq, vol = 0.05) {
+  const a = ac(); if (!a) return;
+  tone(freq, a.currentTime + 0.005, 0.04, { vol });
+}
+function speechBlips(text, base) {
+  const a = ac(); if (!a) return;
+  const n = Math.max(2, Math.min(7, Math.ceil(text.replace(/\W/g, "").length / 4)));
+  const t0 = a.currentTime + 0.01;
+  for (let k = 0; k < n; k++) tone(base * (0.88 + Math.random() * 0.24), t0 + k * 0.07, 0.045, { vol: 0.07 });
+}
+// Each character gets its own voice: pitch band by type, nudged by a hash of its name.
+function voiceOf(inst) {
+  let h = 0;
+  for (const c of inst.def.key) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const base = inst.def.type === "PLAYER" ? 520 : inst.def.type === "NPC" ? 290 : 400;
+  return base + (h % 120);
+}
 function playSound(name) {
   const a = ac(); if (!a) return;
   // Dedupe: "SOUND win" + the VICTORY jingle in the same moment play once.
@@ -1013,6 +1297,9 @@ const game = {
   touching: new Set(),   // pair keys touching last frame (rules fire on contact start)
   goalsDone: new Set(),
   particles: [], floaters: [],
+  bubbles: [],           // speech bubbles: {inst, text, life, max, age, listener, ...}
+  prompt: null,          // the open dialogue box: {def, cont, shown, life}
+  promptQueue: [],       // dialogue boxes waiting behind a WAIT_FOR_KEY one
   shake: 0, time: 0, nextId: 1,
 };
 const keys = new Set();
@@ -1029,6 +1316,8 @@ function resetWorld() {
   game.score = 0; game.lives = p.lives; game.hurtT = 0;
   game.touching = new Set(); game.goalsDone = new Set();
   game.particles = []; game.floaters = []; game.shake = 0;
+  game.bubbles = []; game.prompt = null; game.promptQueue = [];
+  hideAnnounce();
   // Players first, so random spawns can keep their distance from them.
   const order = [...p.entities].sort((a, b) => (a.type === "PLAYER" ? -1 : 0) - (b.type === "PLAYER" ? -1 : 0));
   for (const def of order) {
@@ -1073,6 +1362,7 @@ function placeRandom(inst) {
 
 function setState(s) {
   game.state = s;
+  if (s !== "PLAYING") { game.prompt = null; game.promptQueue = []; }
   if (s === "GAME_OVER") { playSound("lose"); game.shake = 10; }
   if (s === "VICTORY") { playSound("win"); burst(W / 2, H / 2, "#ffd166", 40); }
   updateBanner();
@@ -1081,6 +1371,7 @@ function startPlaying() {
   ac();                               // unlock audio on the user gesture
   if (game.state !== "START") resetWorld();
   setState("PLAYING");
+  if (game.program.intro.length) runActions(game.program.intro, W / 2, H / 2);
 }
 
 // Input direction for a player given its control scheme.
@@ -1136,6 +1427,16 @@ function update(dt) {
     clampInst(i);
   }
 
+  // --- NPCs are solid: players slide around them instead of walking through ---
+  for (const p of game.inst) {
+    if (!p.alive || p.def.type !== "PLAYER") continue;
+    for (const n of game.inst) {
+      if (!n.alive || n.def.type !== "NPC") continue;
+      const dx = p.x - n.x, dy = p.y - n.y, d = Math.hypot(dx, dy) || 0.01, min = p.r + n.r;
+      if (d < min) { p.x = n.x + (dx / d) * min; p.y = n.y + (dy / d) * min; clampInst(p); }
+    }
+  }
+
   // --- collisions + rules (circle vs circle, edge-triggered) ---
   const now = new Set();
   game.program.events.forEach((ev, ei) => {
@@ -1146,7 +1447,8 @@ function update(dt) {
       for (let ib = same ? ia + 1 : 0; ib < B.length; ib++) {
         const b = B[ib];
         if (!a.alive || !b.alive || a === b) continue;
-        const rr = a.r + b.r - 2;
+        // NPCs are solid, so "touching" one means standing right next to it.
+        const rr = a.r + b.r + (a.def.type === "NPC" || b.def.type === "NPC" ? 3 : -2);
         if ((a.x - b.x) ** 2 + (a.y - b.y) ** 2 > rr * rr) continue;
         const key = ei + ":" + a.id + ":" + b.id;
         const hurts = ev.actions.some(x => x.op === "LIVES" && x.value < 0);
@@ -1169,7 +1471,7 @@ function update(dt) {
 
 function fireRule(ev, a, b) {
   const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-  runActions(ev.actions, mx, my);
+  runActions(ev.actions, mx, my, { a, b });
   // Items are "collected": they vanish, or hop elsewhere with RESPAWN.
   for (const i of [a, b]) {
     if (!i.alive) continue;
@@ -1182,8 +1484,12 @@ function fireRule(ev, a, b) {
   }
 }
 
-function runActions(actions, x, y) {
-  for (const act of actions) {
+// Runs actions in order. `ctx` holds the two instances of a TOUCH rule, so
+// "Elder SAYS" speaks from the Elder that was touched. A WAIT_FOR_KEY dialogue
+// pauses the list here; the rest resumes after Space (see advancePrompt).
+function runActions(actions, x, y, ctx = {}, from = 0) {
+  for (let k = from; k < actions.length; k++) {
+    const act = actions[k];
     if (game.state !== "PLAYING") return;
     switch (act.op) {
       case "SCORE":
@@ -1199,7 +1505,118 @@ function runActions(actions, x, y) {
       case "RESET": for (const i of game.byKey[act.value] || []) { if (i.alive) placeAtStart(i); } break;
       case "GAME_OVER": setState("GAME_OVER"); return;
       case "WIN_GAME": setState("VICTORY"); return;
+      case "SAYS": {
+        const who = pickInstance(act.who, ctx);
+        if (who) say(who, act.value, ctx.a === who ? ctx.b : ctx.a);
+        break;
+      }
+      case "ANNOUNCE": announce(act.value); break;
+      case "MOVE":
+        for (const i of game.byKey[act.value] || []) {
+          if (!i.alive) continue;
+          burst(i.x, i.y, "#ffffff", 8);
+          i.x = act.x; i.y = act.y; clampInst(i);
+          burst(i.x, i.y, "#ffffff", 8);
+        }
+        break;
+      case "SHOW": {
+        const def = game.program.prompts[act.value];
+        const blocking = def.waitKey;
+        showPrompt(def, blocking && k + 1 < actions.length ? { actions, x, y, ctx, from: k + 1 } : null);
+        if (blocking) return;             // the rest of this rule runs after Space
+        break;
+      }
     }
+  }
+}
+
+/* ---------------- dialogue: speech bubbles, announcements, dialogue boxes */
+// Prefer the instance involved in the current TOUCH, else the first alive one.
+function pickInstance(key, ctx) {
+  if (ctx.a && ctx.a.alive && ctx.a.def.key === key) return ctx.a;
+  if (ctx.b && ctx.b.alive && ctx.b.def.key === key) return ctx.b;
+  return (game.byKey[key] || []).find(i => i.alive) || null;
+}
+
+function say(inst, text, listener) {
+  const old = game.bubbles.find(b => b.inst === inst);
+  if (old && old.text === text && old.life > 0.4) { old.life = old.max; return; }   // same line: just keep it up
+  game.bubbles = game.bubbles.filter(b => b.inst !== inst);
+  const max = Math.min(3, Math.max(2, 1.5 + text.length * 0.03));                // 2-3 s, longer lines stay longer
+  game.bubbles.push({ inst, text, listener: listener || null, life: max, max, age: 0,
+    x: inst.x, y: inst.y, r: inst.r, lines: null });
+  inst.spoke = true;
+  speechBlips(text, voiceOf(inst));
+}
+function dismissBubbles() { for (const b of game.bubbles) b.life = Math.min(b.life, 0.3); }
+function updateBubbles(dt) {
+  for (const b of game.bubbles) {
+    b.age += dt;
+    if (b.inst.alive) { b.x = b.inst.x; b.y = b.inst.y; }   // follow the speaker
+    else b.life = Math.min(b.life, 0.3);
+    // A player walking away from whoever is talking to them ends the line early.
+    const l = b.listener;
+    if (l && l.def.type === "PLAYER" && l !== b.inst && Math.hypot(l.x - b.x, l.y - b.y) > b.r + l.r + 70)
+      b.life = Math.min(b.life, 0.35);
+    b.life -= dt;
+  }
+  game.bubbles = game.bubbles.filter(b => b.life > 0);
+}
+
+const announceEl = document.getElementById("announce");
+function announce(text) {
+  announceEl.textContent = text;
+  announceEl.classList.remove("hidden", "go");
+  void announceEl.offsetWidth;            // restart the CSS animation
+  announceEl.classList.add("go");
+  speechBlips(text, 660);
+}
+function hideAnnounce() { announceEl.classList.add("hidden"); announceEl.classList.remove("go"); }
+announceEl.addEventListener("animationend", hideAnnounce);
+
+const promptEl = document.getElementById("prompt");
+const promptTextEl = document.getElementById("promptText");
+const promptKeyEl = document.getElementById("promptKey");
+const isModal = () => !!(game.prompt && game.prompt.def.waitKey);
+function showPrompt(def, cont) {
+  if (isModal()) { game.promptQueue.push({ def, cont }); return; }
+  game.prompt = { def, cont, shown: 0, life: def.duration || 0 };
+}
+function nextPrompt() {
+  if (!game.prompt && game.promptQueue.length && game.state === "PLAYING") {
+    const n = game.promptQueue.shift();
+    showPrompt(n.def, n.cont);
+  }
+}
+// Space: the first press finishes the typewriter, the next one closes the box.
+function advancePrompt(force) {
+  const p = game.prompt;
+  if (!p) return;
+  if (!force && p.shown < p.def.text.length) { p.shown = p.def.text.length; return; }
+  game.prompt = null;
+  if (p.cont) runActions(p.cont.actions, p.cont.x, p.cont.y, p.cont.ctx, p.cont.from);
+  nextPrompt();
+}
+function updatePrompt(dt) {
+  const p = game.prompt;
+  if (p) {
+    const len = p.def.text.length;
+    if (p.shown < len) {
+      const before = Math.floor(p.shown);
+      p.shown = Math.min(len, p.shown + dt * 40);           // typewriter: 40 letters / second
+      for (let c = before; c < Math.floor(p.shown); c++)
+        if (c % 3 === 0 && /\w/.test(p.def.text[c])) blip(330 + (c % 5) * 22);
+    } else if (!p.def.waitKey) {
+      p.life -= dt;
+      if (p.life <= 0) { game.prompt = null; nextPrompt(); }
+    }
+  }
+  const cur = game.prompt;
+  promptEl.classList.toggle("hidden", !cur);                 // CSS fades it out
+  if (cur) {
+    const txt = cur.def.text.slice(0, Math.floor(cur.shown));
+    if (promptTextEl.textContent !== txt) promptTextEl.textContent = txt;
+    promptKeyEl.hidden = !(cur.def.waitKey && cur.shown >= cur.def.text.length);
   }
 }
 
@@ -1217,6 +1634,8 @@ function updateFx(dt) {
   for (const fl of game.floaters) { fl.life -= dt; fl.y -= 34 * dt; }
   game.floaters = game.floaters.filter(fl => fl.life > 0);
   game.shake = Math.max(0, game.shake - dt * 30);
+  if (!isModal()) updateBubbles(dt);     // bubbles hold still while a dialogue box waits
+  updatePrompt(dt);
 }
 
 /* ====================================================== 3.7 RENDERER */
@@ -1286,6 +1705,23 @@ function drawEntity(i, t) {
       actx.fillStyle = "#fff";
       actx.fillRect(X + R - 1, Y - R, 1, 3); actx.fillRect(X + R - 2, Y - R + 1, 3, 1);
     }
+  } else if (d.type === "NPC") {
+    // Villager: rounded body with a darker robe; eyes follow the nearest player
+    roundBox(X, Y, R, dark);
+    roundBox(X, Y, R - 1, d.color);
+    const robeTop = Math.round(R * 0.25);
+    actx.fillStyle = shade(d.color, -0.25);
+    actx.fillRect(X - R + 2, Y + robeTop, (R - 2) * 2, Math.max(1, R - 3 - robeTop));
+    actx.fillStyle = light; actx.fillRect(X - R + 2, Y - R + 2, Math.max(1, R - 2), 1);
+    const pl = nearestAlive(game.inst.filter(o => o.def.type === "PLAYER"), i.x, i.y);
+    let fx = 0, fy = 0;
+    if (pl) { const len = Math.hypot(pl.x - i.x, pl.y - i.y) || 1; fx = (pl.x - i.x) / len; fy = (pl.y - i.y) / len; }
+    eyes(X, Y, R, fx, fy, false);
+    if (!i.spoke) {                       // bobbing "!" until they've said something
+      const by = Y - R - 8 + Math.round(Math.sin(t * 4) * 1.5);
+      actx.fillStyle = "#1b2030"; actx.fillRect(X - 2, by - 1, 4, 8);
+      actx.fillStyle = "#ffd166"; actx.fillRect(X - 1, by, 2, 4); actx.fillRect(X - 1, by + 5, 2, 1);
+    }
   } else {
     // Slime: squashy dome with a flat base
     const s = Math.sin(t * 6 + i.id);
@@ -1317,7 +1753,7 @@ function render() {
 
   if (p) {
     // draw order: items, enemies, players (players on top)
-    const order = { ITEM: 0, ENEMY: 1, PLAYER: 2 };
+    const order = { ITEM: 0, ENEMY: 1, NPC: 1, PLAYER: 2 };
     const list = game.inst.filter(i => i.alive).sort((a, b) => order[a.def.type] - order[b.def.type] || a.y - b.y);
     for (const i of list) drawEntity(i, t);
   }
@@ -1335,6 +1771,9 @@ function render() {
   ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
   ctx.drawImage(art, sx, sy, W, H);
 
+  // speech bubbles are drawn at full resolution so the text stays sharp
+  drawBubbles();
+
   // floating score text
   ctx.font = "bold 16px Consolas, monospace";
   ctx.textAlign = "center";
@@ -1345,6 +1784,86 @@ function render() {
   }
   ctx.globalAlpha = 1;
   updateHUD();
+}
+
+/* Speech bubbles: word-wrapped text in a rounded box with a tail pointing at the speaker. */
+const BUBBLE_FONT = "bold 13px Consolas, 'Courier New', monospace";
+function wrapLines(text, maxW) {
+  const lines = [];
+  let line = "";
+  for (const word of text.split(/\s+/)) {
+    const test = line ? line + " " + word : word;
+    if (line && ctx.measureText(test).width > maxW) { lines.push(line); line = word; }
+    else line = test;
+  }
+  if (line) lines.push(line);
+  return lines.length ? lines : [""];
+}
+// One closed path: rounded rectangle with a triangular tail on its bottom (or top) edge.
+function bubblePath(x, y, w, h, rad, tx, tipY, tailUp) {
+  ctx.beginPath();
+  ctx.moveTo(x + rad, y);
+  if (tailUp) { ctx.lineTo(tx - 6, y); ctx.lineTo(tx, tipY); ctx.lineTo(tx + 6, y); }
+  ctx.lineTo(x + w - rad, y);
+  ctx.arcTo(x + w, y, x + w, y + rad, rad);
+  ctx.lineTo(x + w, y + h - rad);
+  ctx.arcTo(x + w, y + h, x + w - rad, y + h, rad);
+  if (!tailUp) { ctx.lineTo(tx + 6, y + h); ctx.lineTo(tx, tipY); ctx.lineTo(tx - 6, y + h); }
+  ctx.lineTo(x + rad, y + h);
+  ctx.arcTo(x, y + h, x, y + h - rad, rad);
+  ctx.lineTo(x, y + rad);
+  ctx.arcTo(x, y, x + rad, y, rad);
+  ctx.closePath();
+}
+const BUBBLE_LH = 16, BUBBLE_PAD_X = 9, BUBBLE_PAD_Y = 6;
+// Where a bubble wants to sit: centered over the speaker's head, kept on screen.
+function bubbleLayout(b) {
+  ctx.font = BUBBLE_FONT;
+  if (!b.lines) b.lines = wrapLines(b.text, 180);
+  const gap = 10;
+  const w = Math.min(W - 8, Math.max(44, Math.ceil(Math.max(...b.lines.map(l => ctx.measureText(l).width))) + BUBBLE_PAD_X * 2));
+  const h = b.lines.length * BUBBLE_LH + BUBBLE_PAD_Y * 2;
+  // Hover above the head; if that would hit the HUD row, hang below instead.
+  const tailUp = b.y - b.r - gap - h < 30;
+  const x = Math.round(Math.max(4, Math.min(W - 4 - w, b.x - w / 2)));
+  const y = Math.round(tailUp ? b.y + b.r + gap : b.y - b.r - gap - h);
+  return { x, y, w, h, tailUp };
+}
+// Lay out every bubble, nudging later ones so they never cover earlier ones.
+function drawBubbles() {
+  const placed = [];
+  for (const b of game.bubbles) {
+    const g = bubbleLayout(b);
+    for (let tries = 0; tries < 6; tries++) {
+      const hit = placed.find(p => g.x < p.x + p.w + 4 && p.x < g.x + g.w + 4 && g.y < p.y + p.h + 4 && p.y < g.y + g.h + 4);
+      if (!hit) break;
+      g.y = g.tailUp ? hit.y + hit.h + 6 : hit.y - g.h - 6;
+    }
+    g.y = Math.max(4, Math.min(H - 4 - g.h, g.y));
+    g.b = b;
+    placed.push(g);
+  }
+  // Draw the nudged (later) ones first so a stretched tail passes behind the bubble it skips over.
+  for (let k = placed.length - 1; k >= 0; k--) drawBubble(placed[k].b, placed[k]);
+}
+function drawBubble(b, { x, y, w, h, tailUp }) {
+  ctx.save();
+  ctx.font = BUBBLE_FONT;
+  const lh = BUBBLE_LH, padY = BUBBLE_PAD_Y;
+  const tx = Math.round(Math.max(x + 14, Math.min(x + w - 14, b.x)));
+  const tipY = Math.round(tailUp ? b.y + b.r + 2 : b.y - b.r - 2);
+  // pop in (ease-out) and fade out over the last 0.35 s
+  const pop = Math.min(1, b.age / 0.15), s = 0.7 + 0.3 * (1 - (1 - pop) ** 3);
+  ctx.globalAlpha = Math.max(0, Math.min(1, b.life / 0.35));
+  ctx.translate(tx, tipY); ctx.scale(s, s); ctx.translate(-tx, -tipY);
+  ctx.fillStyle = "rgba(0,0,0,.35)";
+  bubblePath(x + 3, y + 3, w, h, 8, tx + 3, tipY + 3, tailUp); ctx.fill();
+  bubblePath(x, y, w, h, 8, tx, tipY, tailUp);
+  ctx.fillStyle = "#fbfcff"; ctx.fill();
+  ctx.lineWidth = 2; ctx.strokeStyle = "#1b2030"; ctx.stroke();
+  ctx.fillStyle = "#1b2030"; ctx.textAlign = "center"; ctx.textBaseline = "top";
+  b.lines.forEach((l, k) => ctx.fillText(l, x + w / 2, y + padY + k * lh + 1));
+  ctx.restore();
 }
 
 /* HUD (HTML overlay, updated only when values change) */
@@ -1387,7 +1906,7 @@ function frame(now) {
   if (dt > 0.05) dt = 0.05;
   if (dt < 0) dt = 0;
   game.time += dt;
-  if (game.state === "PLAYING" && game.program) update(dt);
+  if (game.state === "PLAYING" && game.program && !isModal()) update(dt);   // WAIT_FOR_KEY boxes pause play
   updateFx(dt);
   render();
   requestAnimationFrame(frame);
@@ -1406,9 +1925,11 @@ let lastResult = null;       // most recent compile result
 let runningSource = null;    // source of the program currently loaded in the engine
 const buffers = {};          // per-demo edited text, so switching demos keeps your edits
 
-const KW_ENT = new Set(ENTITY_TYPES), KW_RULE = new Set(["ON", "TOUCH", "TOUCHES", "WHEN", "REACHES"]);
-const KW_DIR = new Set(["TITLE", "BACKGROUND", "LIVES"]);
-const KW_PROP = new Set(Object.keys(PROPS)), KW_ACT = new Set(ACTIONS);
+const KW_ENT = new Set([...ENTITY_TYPES, ...Object.keys(ADD_KINDS)]);
+const KW_RULE = new Set(["ON", "TOUCH", "TOUCHES", "WHEN", "REACHES", "SAYS", "TO"]);
+const KW_DIR = new Set(["TITLE", "BACKGROUND", "LIVES", "ADD"]);
+const KW_PROP = new Set([...Object.keys(PROPS), ...PROMPT_PROPS]), KW_ACT = new Set(ACTIONS);
+const KW_AMOUNT = new Set(["SCORE", "POINT", "POINTS", "LIFE", "LIVES"]);
 const KW_VAL = new Set([...SOUNDS, ...AI_MODES, ...CONTROL_SCHEMES].map(s => s.toUpperCase()));
 
 // Syntax highlighter for one line -> HTML.
@@ -1424,7 +1945,8 @@ function highlightLine(line) {
     else if (m[3]) cls = "t-num";
     else if (m[4]) {
       if (prev === "COLOR" || prev === "BACKGROUND") cls = isColor(tok) ? "t-val t-col" : "t-val";
-      else if (KW_ENT.has(U) && first) cls = "t-ent";
+      else if ((prev === "ADD" || prev === "LOSE") && KW_AMOUNT.has(U) && line[0] === " ") cls = "t-act";
+      else if (KW_ENT.has(U) && (first || prev === "ADD" || prev === "SHOW")) cls = "t-ent";
       else if (KW_RULE.has(U)) cls = "t-kw";
       else if (KW_DIR.has(U) && first && line[0] !== " ") cls = "t-dir";
       else if (KW_PROP.has(U) && first) cls = "t-prop";
@@ -1470,7 +1992,8 @@ function logMessages(result, extra) {
   if (!result.errors.length) {
     const p = result.program;
     const n = (k, word) => `${k} ${word}${k === 1 ? "" : word === "entity" ? "" : "s"}`.replace(/entity$/, k === 1 ? "entity" : "entities");
-    items.push({ type: "ok", text: `Compiled "${p.title}": ${n(p.entities.length, "entity")}, ${n(p.events.length, "touch rule")}, ${n(p.goals.length, "score goal")}.` });
+    const nd = Object.keys(p.prompts).length;
+    items.push({ type: "ok", text: `Compiled "${p.title}": ${n(p.entities.length, "entity")}, ${n(p.events.length, "touch rule")}, ${n(p.goals.length, "score goal")}${nd ? `, ${n(nd, "dialogue")}` : ""}.` });
   }
   consoleBody.innerHTML = items.map(it => `
     <div class="msg ${it.type}" ${it.line ? `data-line="${it.line}"` : ""}>
@@ -1622,7 +2145,10 @@ window.addEventListener("keydown", e => {
   }
   e.preventDefault();
   if (e.code === "Space") {
-    if (!e.repeat && game.program && game.state !== "PLAYING") { startPlaying(); stage.focus({ preventScroll: true }); }
+    if (e.repeat || !game.program) return;
+    if (game.state !== "PLAYING") { startPlaying(); stage.focus({ preventScroll: true }); }
+    else if (isModal()) advancePrompt();       // finish / close the dialogue box
+    else dismissBubbles();                     // skip what's being said
     return;
   }
   keys.add(e.code);
@@ -1633,6 +2159,7 @@ ta.addEventListener("focus", () => keys.clear());
 stage.addEventListener("mousedown", () => {
   setTimeout(() => stage.focus({ preventScroll: true }), 0);
   if (game.program && game.state !== "PLAYING") startPlaying();
+  else if (isModal()) advancePrompt();
 });
 
 /* ============================================ 3.9 BOOT + SELF-TEST */
@@ -1645,11 +2172,16 @@ function selfTest() {
     out.demos[id] = { errors: r.errors.length, warnings: r.warnings.length };
     if (r.errors.length) { out.ok = false; out.demos[id].list = r.errors; continue; }
     loadProgram(r.program); startPlaying();
-    let frames = 0, maxScore = 0;
-    // Steer the first player toward the nearest non-respawning-safe item, plus random jitter.
+    let frames = 0, maxScore = 0, bubbles = 0, prompts = 0, lastX = 0, lastY = 0, stuck = 0;
+    // Steer the first player toward the nearest item that isn't a trap.
     for (; frames < 60 * 90 && game.state === "PLAYING"; frames++) {
+      if (isModal()) { prompts++; advancePrompt(true); continue; }   // "press Space" on dialogue boxes
       keys.clear();
       const pl = game.inst.find(i => i.def.type === "PLAYER");
+      bubbles = Math.max(bubbles, game.bubbles.length);
+      stuck = Math.hypot(pl.x - lastX, pl.y - lastY) < 0.3 ? stuck + 1 : 0;
+      lastX = pl.x; lastY = pl.y;
+      if (stuck > 20) { keys.add(pl.def.controls === "wasd" ? "KeyW" : "ArrowUp"); update(1 / 60); updateFx(1 / 60); continue; }
       const target = nearestAlive(game.inst.filter(i => i.def.type === "ITEM" && !/trap/.test(i.def.key)), pl.x, pl.y);
       if (target) {
         if (target.x < pl.x - 3) keys.add(pl.def.controls === "wasd" ? "KeyA" : "ArrowLeft");
@@ -1660,7 +2192,7 @@ function selfTest() {
       update(1 / 60); updateFx(1 / 60);
       maxScore = Math.max(maxScore, game.score);
     }
-    out.demos[id].sim = { frames, state: game.state, score: game.score, lives: game.lives, maxScore };
+    out.demos[id].sim = { frames, state: game.state, score: game.score, lives: game.lives, maxScore, maxBubbles: bubbles, promptsClosed: prompts };
     render();
   }
   keys.clear();
@@ -1675,6 +2207,14 @@ function selfTest() {
     unindented: "PLAYER hero\nSPEED 3",
     badSound: "PLAYER hero\nITEM c\nON hero TOUCH c:\n  SOUND pikup",
     gameOverSpace: "PLAYER hero\nITEM c\nON hero TOUCH c:\n  GAME OVER",
+    addTypo: "ADD CHARCTER Hero",
+    speakerTypo: "ADD CHARACTER Hero\nADD NPC Elder\nON Hero TOUCH Elder:\n  Eldr SAYS \"hi\"",
+    saysNoQuotes: "ADD CHARACTER Hero\nHero SAYS hello there",
+    dialogueTypo: "ADD CHARACTER Hero\nADD DIALOGUE intro\n  TEXT \"x\"\nSHOW DIALOGUE intr",
+    moveNoTo: "ADD CHARACTER Hero\nITEM c\nON Hero TOUCH c:\n  MOVE Hero 5, 5",
+    waitKey: "ADD CHARACTER Hero\nADD PROMPT p\n  TEXT \"x\"\n  WAIT_FOR_KEY enter",
+    loseTypo: "ADD CHARACTER Hero\nITEM c\nON Hero TOUCH c:\n  LOSE LIIFE",
+    promptProp: "ADD CHARACTER Hero\nADD PROMPT p\n  TXET \"x\"",
   };
   for (const [k, src] of Object.entries(cases)) {
     const r = compile(src);
@@ -1685,9 +2225,20 @@ function selfTest() {
   document.getElementById("selftest").hidden = false;
 }
 
-loadDemo("coin", true);
+loadDemo("quest", true);
 requestAnimationFrame(frame);
-if (/[?&]selftest\b/.test(location.search)) { selfTest(); loadDemo("coin", true); }
+if (/[?&]selftest\b/.test(location.search)) { selfTest(); loadDemo("quest", true); }
+// ?preview stages a dialogue scene (handy for screenshots): bubbles + a dialogue box.
+if (/[?&]preview\b/.test(location.search)) {
+  startPlaying(); advancePrompt(true);
+  const [hero] = game.byKey.hero, [elder] = game.byKey.elder;
+  hero.x = 250; hero.y = 205; game.byKey.bramble.forEach((b, k) => { b.x = 120 + k * 360; b.y = 330; });
+  say(elder, "Gather 3 green gems to save the grove!", hero);
+  say(hero, "On it!", elder);
+  showPrompt(game.program.prompts.tip, null);
+  game.prompt.shown = 999;
+  for (const b of game.bubbles) b.age = 1, b.life = b.max = 99;
+}
 </script>
 </body>
 </html>
