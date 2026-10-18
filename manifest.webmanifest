@@ -1,0 +1,14 @@
+{
+  "name": "Custom DSL Game Engine",
+  "short_name": "DSL Engine",
+  "description": "Make 2D games with a tiny English-like scripting language, right in your browser.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0d1017",
+  "theme_color": "#151a23",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

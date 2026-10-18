@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Custom DSL Game Engine</title>
+<meta name="theme-color" content="#151a23">
+<meta name="description" content="Make 2D games with a tiny English-like scripting language, right in your browser.">
+<!-- Used when hosted (GitHub Pages): installable app + offline. Harmless when opened as a local file. -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <!--
   ============================================================================
   CUSTOM DSL GAME ENGINE
@@ -3935,6 +3941,8 @@ window.addEventListener("drop", e => {
 
 async function initProjects(restore) {
   await store.ready();
+  // Ask the browser not to clear saved projects when it's low on space.
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
   try { projects.list = await store.all("projects"); } catch (_) { projects.list = []; }
   let last = null;
   try { last = localStorage.getItem("dsl-engine:last"); } catch (_) {}
@@ -4159,8 +4167,10 @@ function downloadResult(name, obj) {
 }
 // ?persisttest=write, then (after closing the browser) ?persisttest=read: do projects survive a restart?
 async function persistTest(mode) {
-  const out = { mode, persistent: store.persistent };
+  const out = { mode, persistent: store.persistent, origin: location.protocol };
   try {
+    if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol))
+      out.offlineCache = await Promise.race([navigator.serviceWorker.ready.then(() => "ready"), new Promise(r => setTimeout(() => r("not ready"), 6000))]);
     if (mode === "write") {
       const cv = Object.assign(document.createElement("canvas"), { width: 8, height: 8 });
       cv.getContext("2d").fillRect(0, 0, 8, 8);
@@ -4189,6 +4199,8 @@ async function persistTest(mode) {
 populateSelect();
 loadDemo("quest", true);
 requestAnimationFrame(frame);
+// When hosted on http(s): cache the app so it opens offline and can be installed.
+if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register("sw.js").catch(() => {});
 if (/[?&]selftest\b/.test(location.search)) { selfTest(); loadDemo("quest", true); }
 initProjects(!/[?&](selftest|preview|assets|projecttest)\b/.test(location.search))
   .then(() => {
