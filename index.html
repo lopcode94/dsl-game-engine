@@ -1,0 +1,1693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Custom DSL Game Engine</title>
+<!--
+  ============================================================================
+  CUSTOM DSL GAME ENGINE
+  ----------------------------------------------------------------------------
+  A self-contained 2D game engine plus a tiny English-like scripting language.
+  Everything (layout, styles, parser, engine, audio) lives in this one file.
+  No npm packages, no CDNs: open it in any modern browser and play.
+
+  File map:
+    1. CSS ............ dark theme, split-screen layout, editor overlay trick
+    2. HTML ........... header, editor + console drawer, canvas stage + HUD
+    3. JS
+       3.1 Demo scripts (Coin Catcher, Slime Dodger, Treasure Rush)
+       3.2 Language tables (properties, actions, keywords)
+       3.3 Helpers (did-you-mean, colors)
+       3.4 Compiler (line-based, indentation-aware parser -> program object)
+       3.5 Audio (Web Audio 8-bit synth)
+       3.6 Engine (world, update, collision, events, state machine)
+       3.7 Renderer (low-res pixel buffer upscaled with hard edges)
+       3.8 Editor UI (line numbers, highlighting, tab support, live compile)
+       3.9 Boot + self-test hook (?selftest)
+  ============================================================================
+-->
+<style>
+  /* ------------------------------------------------------------------ 1. CSS */
+  :root {
+    --bg: #0d1017;
+    --panel: #151a23;
+    --panel-2: #1b212d;
+    --line: #283041;
+    --text: #d8deea;
+    --muted: #7d889c;
+    --accent: #8b6cff;
+    --accent-2: #4cc9f0;
+    --ok: #3ddc97;
+    --warn: #ffc857;
+    --err: #ff5c7a;
+    --code-font: "JetBrains Mono", "Cascadia Code", Consolas, "Courier New", monospace;
+    --code-size: 13.5px;
+    --code-lh: 20px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: linear-gradient(180deg, #171c27, #12161e);
+    border-bottom: 1px solid var(--line);
+    flex-wrap: wrap;
+  }
+  header h1 {
+    font-size: 17px;
+    margin: 0 auto 0 0;
+    letter-spacing: .3px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+  header h1 .logo {
+    width: 22px; height: 22px; border-radius: 6px;
+    background: conic-gradient(from 200deg, var(--accent), var(--accent-2), var(--ok), var(--accent));
+    box-shadow: 0 0 14px rgba(139,108,255,.45);
+  }
+  select, button {
+    font: inherit;
+    color: var(--text);
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 7px 12px;
+    cursor: pointer;
+  }
+  select:hover, button:hover { border-color: #3b4660; }
+  button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  #runBtn {
+    background: linear-gradient(180deg, #9a7dff, #6f4fff);
+    border-color: #8b6cff;
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 2px 12px rgba(111,79,255,.35);
+  }
+  #runBtn:hover { filter: brightness(1.1); }
+  #muteBtn { width: 40px; padding: 7px 0; }
+
+  /* Main split */
+  main {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    gap: 12px;
+    padding: 12px;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .panel-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-title .spacer { flex: 1; }
+  .kbd {
+    font-family: var(--code-font);
+    font-size: 11px;
+    border: 1px solid var(--line);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    padding: 0 5px;
+    color: var(--text);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  /* Editor: gutter + highlighted <pre> under a transparent <textarea> */
+  .editor { flex: 1; min-height: 0; display: flex; background: #10141c; }
+  .gutter {
+    width: 48px;
+    flex: none;
+    overflow: hidden;
+    background: #0e1219;
+    border-right: 1px solid var(--line);
+    font: var(--code-size)/var(--code-lh) var(--code-font);
+    color: #4a5468;
+    text-align: right;
+    user-select: none;
+  }
+  .gutter-inner { padding: 10px 8px 10px 0; }
+  .gutter-inner div { height: var(--code-lh); }
+  .gutter-inner div.err { color: var(--err); font-weight: 700; }
+  .gutter-inner div.warn { color: var(--warn); }
+  .code-wrap { position: relative; flex: 1; min-width: 0; }
+  .code-wrap pre, .code-wrap textarea {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    padding: 10px 14px;
+    font: var(--code-size)/var(--code-lh) var(--code-font);
+    white-space: pre;
+    tab-size: 2;
+    border: 0;
+    letter-spacing: 0;
+  }
+  .code-wrap pre { overflow: hidden; pointer-events: none; color: var(--text); }
+  .code-wrap textarea {
+    resize: none;
+    overflow: auto;
+    background: transparent;
+    color: transparent;
+    caret-color: #fff;
+    outline: none;
+    overflow-wrap: normal;
+  }
+  .code-wrap textarea::selection { background: rgba(139,108,255,.35); color: transparent; }
+  .l { display: block; min-height: var(--code-lh); }
+  .l.err { background: rgba(255,92,122,.13); box-shadow: inset 3px 0 var(--err); }
+  .l.warn { background: rgba(255,200,87,.08); box-shadow: inset 3px 0 var(--warn); }
+  /* syntax colors */
+  .t-com { color: #5c6780; font-style: italic; }
+  .t-ent { color: #c792ff; font-weight: 700; }
+  .t-kw  { color: #ff7ab8; font-weight: 700; }
+  .t-dir { color: #ff9e64; font-weight: 700; }
+  .t-prop{ color: #4cc9f0; }
+  .t-act { color: #ffb86b; }
+  .t-num { color: #ffd866; }
+  .t-str { color: #a6e3a1; }
+  .t-name{ color: #f2f4f8; }
+  .t-val { color: #9ad0ff; }
+  .t-col { border-bottom: 3px solid transparent; }
+
+  /* Console drawer */
+  .drawer { flex: none; height: 190px; border-top: 1px solid var(--line); display: flex; flex-direction: column; transition: height .2s; }
+  .drawer.collapsed { height: 37px; }
+  .drawer-head { display: flex; align-items: center; gap: 4px; padding: 4px 8px; background: var(--panel-2); border-bottom: 1px solid var(--line); }
+  .tab { background: transparent; border: 0; padding: 5px 10px; color: var(--muted); font-size: 12.5px; border-radius: 6px; }
+  .tab.active { color: var(--text); background: #252c3a; }
+  .status-pill { margin-left: auto; font: 600 12px var(--code-font); padding: 3px 9px; border-radius: 999px; background: #222937; }
+  .status-pill.ok { color: var(--ok); }
+  .status-pill.bad { color: var(--err); }
+  #drawerToggle { background: transparent; border: 0; padding: 4px 8px; color: var(--muted); }
+  .drawer-body { flex: 1; overflow: auto; font: 12.5px/1.5 var(--code-font); padding: 6px 0; }
+  .drawer-body.flash { animation: flash .6s; }
+  @keyframes flash { 0%,100% { background: transparent; } 30% { background: rgba(255,92,122,.18); } }
+  .msg { padding: 3px 12px; display: flex; gap: 8px; cursor: default; }
+  .msg[data-line] { cursor: pointer; }
+  .msg[data-line]:hover { background: #1c2230; }
+  .msg .ic { flex: none; width: 14px; text-align: center; }
+  .msg.error { color: #ffb3c1; } .msg.error .ic { color: var(--err); }
+  .msg.warn  { color: #ffe3a3; } .msg.warn .ic { color: var(--warn); }
+  .msg.ok    { color: #b7f5d8; } .msg.ok .ic { color: var(--ok); }
+  .msg.info  { color: var(--muted); }
+  .msg .hint { display: block; color: var(--muted); }
+  .ref { padding: 4px 14px 12px; color: #c9d1e0; }
+  .ref h4 { margin: 10px 0 4px; color: var(--accent-2); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+  .ref code { color: #ffd866; }
+  .ref table { border-collapse: collapse; }
+  .ref td { padding: 1px 14px 1px 0; vertical-align: top; }
+  .ref td:first-child { white-space: nowrap; color: #4cc9f0; }
+
+  /* Game panel */
+  .game-panel { align-items: center; }
+  .game-area { flex: 1; min-height: 0; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 14px; gap: 10px; }
+  .stage {
+    position: relative;
+    width: min(100%, calc((100vh - 200px) * 1.5));
+    aspect-ratio: 3 / 2;
+    background: #000;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 0 0 1px var(--line), 0 18px 50px rgba(0,0,0,.5);
+    outline: none;
+  }
+  .stage:focus-visible { box-shadow: 0 0 0 2px var(--accent), 0 18px 50px rgba(0,0,0,.5); }
+  .stage canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; image-rendering: crisp-edges; }
+  .hud { position: absolute; inset: 0; pointer-events: none; font-family: var(--code-font); color: #fff; text-shadow: 2px 2px 0 rgba(0,0,0,.65); }
+  .hud-top { display: flex; justify-content: space-between; align-items: center; padding: 2.2% 3%; font-weight: 800; font-size: clamp(12px, 2.4vw, 18px); }
+  .hud-title { opacity: .75; font-size: .8em; }
+  .hearts { color: #ff4d6d; letter-spacing: 2px; }
+  .banner {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    background: radial-gradient(ellipse at center, rgba(5,7,12,.55), rgba(5,7,12,.82));
+    text-align: center; padding: 20px;
+  }
+  .banner.hidden { display: none; }
+  .banner h2 { margin: 0; font-size: clamp(22px, 5.5vw, 46px); letter-spacing: 3px; }
+  .banner p { margin: 0; font-size: clamp(11px, 2vw, 15px); opacity: .9; }
+  .banner .blink { animation: blink 1.1s steps(2, start) infinite; }
+  @keyframes blink { to { visibility: hidden; } }
+  .banner.win h2 { color: #ffd166; }
+  .banner.lose h2 { color: #ff5c7a; }
+  .banner.start h2 { color: #8be9fd; }
+  .controls-hint { color: var(--muted); font-size: 12.5px; text-align: center; }
+  .controls-hint .kbd { margin: 0 1px; }
+  .dirty-note { color: var(--warn); font-size: 12.5px; min-height: 18px; }
+
+  @media (max-width: 900px) {
+    body { overflow: auto; height: auto; }
+    main { grid-template-columns: 1fr; }
+    .editor-panel { height: 75vh; }
+    .stage { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<!-- ================================================================ 2. HTML -->
+<header>
+  <h1><span class="logo"></span>Custom DSL Game Engine</h1>
+  <select id="demoSelect" title="Load a demo script">
+    <option value="coin">Coin Catcher</option>
+    <option value="slime">Slime Dodger</option>
+    <option value="treasure">Treasure Rush</option>
+  </select>
+  <button id="runBtn" title="Compile and play (Ctrl+Enter)">▶ Run Game</button>
+  <button id="resetBtn" title="Restore this demo's original script">Reset</button>
+  <button id="muteBtn" title="Mute / unmute">🔊</button>
+</header>
+
+<main>
+  <!-- Left: script editor + console -->
+  <section class="panel editor-panel">
+    <div class="panel-title">
+      Script <span class="spacer"></span>
+      <span class="kbd">Tab</span> indent <span class="kbd">Ctrl+Enter</span> run
+    </div>
+    <div class="editor">
+      <div class="gutter"><div class="gutter-inner" id="gutter"></div></div>
+      <div class="code-wrap">
+        <pre id="highlight" aria-hidden="true"></pre>
+        <textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Game script"></textarea>
+      </div>
+    </div>
+    <div class="drawer" id="drawer">
+      <div class="drawer-head">
+        <button class="tab active" data-tab="console">Console / Error Log</button>
+        <button class="tab" data-tab="ref">Language Reference</button>
+        <span class="status-pill" id="statusPill">…</span>
+        <button id="drawerToggle" title="Collapse / expand">▾</button>
+      </div>
+      <div class="drawer-body" id="consoleBody"></div>
+      <div class="drawer-body ref" id="refBody" hidden>
+        <h4>Directives (no indent)</h4>
+        <table>
+          <tr><td>TITLE "My Game"</td><td>Name shown on the start screen</td></tr>
+          <tr><td>BACKGROUND navy</td><td>Hex (#1d2b3a) or any CSS color name</td></tr>
+          <tr><td>LIVES 3</td><td>Starting lives (default 3). Hitting 0 = game over</td></tr>
+        </table>
+        <h4>Entities: PLAYER / ITEM / ENEMY &lt;name&gt;</h4>
+        <table>
+          <tr><td>COLOR gold</td><td>Fill color</td></tr>
+          <tr><td>SIZE 24</td><td>Width in pixels</td></tr>
+          <tr><td>SPEED 3</td><td>Pixels per frame (at 60 FPS)</td></tr>
+          <tr><td>START 300, 200</td><td>Starting x, y (canvas is 600 × 400)</td></tr>
+          <tr><td>CONTROLS arrows</td><td>PLAYER only: arrows or wasd (default: both)</td></tr>
+          <tr><td>COUNT 5</td><td>ITEM/ENEMY: how many, at random spots</td></tr>
+          <tr><td>AI chase hero</td><td>ENEMY: chase a target (default: first PLAYER)</td></tr>
+          <tr><td>AI wander</td><td>ENEMY: roam and bounce off walls</td></tr>
+          <tr><td>RESPAWN</td><td>Jump to a new random spot when touched (items vanish without it)</td></tr>
+        </table>
+        <h4>Rules</h4>
+        <table>
+          <tr><td>ON hero TOUCH coin:</td><td>Run the indented actions when they touch</td></tr>
+          <tr><td>WHEN SCORE REACHES 100:</td><td>Run the indented actions once the score gets there</td></tr>
+        </table>
+        <h4>Actions (indented under a rule)</h4>
+        <table>
+          <tr><td>SCORE + 10</td><td>Add points (or SCORE - 5)</td></tr>
+          <tr><td>LIVES - 1</td><td>Lose a life (or LIVES + 1)</td></tr>
+          <tr><td>SOUND pickup</td><td>pickup, hit, win or lose</td></tr>
+          <tr><td>RESET hero</td><td>Send an entity back to its START</td></tr>
+          <tr><td>GAME_OVER</td><td>End the game (you lose)</td></tr>
+          <tr><td>WIN_GAME</td><td>End the game (you win)</td></tr>
+        </table>
+        <h4>Comments</h4>
+        <p>Anything after <code>//</code> is ignored. Indent with 2 or 4 spaces.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Right: game stage -->
+  <section class="panel game-panel">
+    <div class="panel-title" style="width:100%">Game <span class="spacer"></span> 600 × 400</div>
+    <div class="game-area">
+      <div class="stage" id="stage" tabindex="0" aria-label="Game canvas. Click to focus, then use the arrow keys or WASD.">
+        <canvas id="canvas" width="600" height="400"></canvas>
+        <div class="hud">
+          <div class="hud-top">
+            <span id="hudScore">SCORE 0</span>
+            <span class="hud-title" id="hudTitle"></span>
+            <span class="hearts" id="hudLives"></span>
+          </div>
+          <div class="banner start" id="banner">
+            <h2 id="bannerTitle">LOADING</h2>
+            <p id="bannerSub"></p>
+            <p class="blink" id="bannerPrompt"></p>
+          </div>
+        </div>
+      </div>
+      <div class="dirty-note" id="dirtyNote"></div>
+      <div class="controls-hint">
+        Move: <span class="kbd">←</span><span class="kbd">↑</span><span class="kbd">↓</span><span class="kbd">→</span>
+        or <span class="kbd">W</span><span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span>
+        · Start / Restart: <span class="kbd">Space</span>
+        · Click the game to give it the keyboard
+      </div>
+    </div>
+  </section>
+</main>
+
+<pre id="selftest" hidden></pre>
+
+<script>
+"use strict";
+/* ===================================================== 3.1 DEMO SCRIPTS */
+const DEMOS = {
+coin: `// ===== COIN CATCHER =====
+// Grab the gold, dodge the slimes. Reach 150 points to win!
+
+TITLE "Coin Catcher"
+BACKGROUND #1d2b3a
+LIVES 3
+
+PLAYER hero
+  COLOR #4cc9f0
+  SIZE 24
+  SPEED 4
+  START 300, 200
+  // add "CONTROLS arrows" or "CONTROLS wasd" to pick one scheme
+
+ITEM coin
+  COLOR gold
+  SIZE 14
+  COUNT 5
+  RESPAWN
+
+ENEMY slime
+  COLOR limegreen
+  SIZE 26
+  SPEED 1.5
+  COUNT 2
+  AI wander
+
+ON hero TOUCH coin:
+  SCORE + 10
+  SOUND pickup
+
+ON hero TOUCH slime:
+  LIVES - 1
+  SOUND hit
+  RESET hero
+
+WHEN SCORE REACHES 150:
+  WIN_GAME
+`,
+
+slime: `// ===== SLIME DODGER =====
+// Purple slimes hunt you down. Teal blobs bounce around.
+// Collect 10 stars to win. Pink hearts give an extra life.
+
+TITLE "Slime Dodger"
+BACKGROUND #2a1e3b
+LIVES 3
+
+PLAYER runner
+  COLOR white
+  SIZE 20
+  SPEED 4.5
+  START 60, 200
+
+ENEMY slime
+  COLOR #9b5de5
+  SIZE 28
+  SPEED 1.3
+  COUNT 3
+  AI chase runner
+
+ENEMY blob
+  COLOR #00f5d4
+  SIZE 20
+  SPEED 2.4
+  COUNT 3
+  AI wander
+
+ITEM star
+  COLOR #fee440
+  SIZE 14
+  RESPAWN
+
+ITEM heart
+  COLOR hotpink
+  SIZE 12
+
+ON runner TOUCH star:
+  SCORE + 5
+  SOUND pickup
+
+ON runner TOUCH heart:
+  LIVES + 1
+  SOUND pickup
+
+ON runner TOUCH slime:
+  LIVES - 1
+  SOUND hit
+  RESET runner
+
+ON runner TOUCH blob:
+  LIVES - 1
+  SOUND hit
+
+WHEN SCORE REACHES 50:
+  SOUND win
+  WIN_GAME
+`,
+
+treasure: `// ===== TREASURE RUSH (2-player co-op!) =====
+// Knight uses WASD, Rogue uses the arrow keys.
+// Loot all 8 chests (25 points each), avoid traps, ghosts and the guard.
+
+TITLE "Treasure Rush"
+BACKGROUND #2b2118
+LIVES 5
+
+PLAYER knight
+  COLOR #4895ef
+  SIZE 22
+  SPEED 3.5
+  START 80, 200
+  CONTROLS wasd
+
+PLAYER rogue
+  COLOR #f72585
+  SIZE 22
+  SPEED 3.5
+  START 520, 200
+  CONTROLS arrows
+
+ITEM chest
+  COLOR #ffb703
+  SIZE 16
+  COUNT 8
+
+ITEM trap
+  COLOR #e63946
+  SIZE 12
+  COUNT 4
+  RESPAWN
+
+ENEMY ghost
+  COLOR #caf0f8
+  SIZE 24
+  SPEED 1.4
+  COUNT 3
+  AI wander
+
+ENEMY guard
+  COLOR #8d99ae
+  SIZE 26
+  SPEED 1.1
+  START 300, 60
+  AI chase knight
+
+ON knight TOUCH chest:
+  SCORE + 25
+  SOUND pickup
+
+ON rogue TOUCH chest:
+  SCORE + 25
+  SOUND pickup
+
+ON knight TOUCH trap:
+  LIVES - 1
+  SOUND hit
+
+ON rogue TOUCH trap:
+  LIVES - 1
+  SOUND hit
+
+ON knight TOUCH ghost:
+  LIVES - 1
+  SOUND hit
+  RESET knight
+
+ON rogue TOUCH ghost:
+  LIVES - 1
+  SOUND hit
+  RESET rogue
+
+ON knight TOUCH guard:
+  LIVES - 1
+  SOUND hit
+  RESET guard
+
+ON rogue TOUCH guard:
+  LIVES - 1
+  SOUND hit
+  RESET guard
+
+WHEN SCORE REACHES 200:
+  SOUND win
+  WIN_GAME
+`
+};
+
+/* =============================================== 3.2 LANGUAGE TABLES */
+const ENTITY_TYPES = ["PLAYER", "ITEM", "ENEMY"];
+const TOP_LEVEL = ["TITLE", "BACKGROUND", "LIVES", "PLAYER", "ITEM", "ENEMY", "ON", "WHEN"];
+// Which entity types each property is allowed on.
+const PROPS = {
+  COLOR:    ["PLAYER", "ITEM", "ENEMY"],
+  SIZE:     ["PLAYER", "ITEM", "ENEMY"],
+  SPEED:    ["PLAYER", "ITEM", "ENEMY"],
+  START:    ["PLAYER", "ITEM", "ENEMY"],
+  CONTROLS: ["PLAYER"],
+  COUNT:    ["ITEM", "ENEMY"],
+  AI:       ["ENEMY"],
+  RESPAWN:  ["PLAYER", "ITEM", "ENEMY"],
+};
+const ACTIONS = ["SCORE", "LIVES", "SOUND", "RESET", "GAME_OVER", "WIN_GAME"];
+const SOUNDS = ["pickup", "hit", "win", "lose"];
+const AI_MODES = ["chase", "wander"];
+const CONTROL_SCHEMES = ["arrows", "wasd"];
+// Per-type defaults so a bare "ENEMY bob" still does something sensible.
+const DEFAULTS = {
+  PLAYER: { color: "#4cc9f0", size: 24, speed: 3.5, ai: null },
+  ITEM:   { color: "gold",    size: 14, speed: 0,   ai: null },
+  ENEMY:  { color: "#e63946", size: 24, speed: 1.5, ai: "wander" },
+};
+const W = 600, H = 400;     // logical resolution
+const PX = 2;               // logical pixels per "art pixel" (300 x 200 art buffer)
+
+/* ======================================================= 3.3 HELPERS */
+// Levenshtein edit distance, used for "did you mean" hints.
+function editDistance(a, b) {
+  a = a.toLowerCase(); b = b.toLowerCase();
+  const dp = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+  for (let j = 1; j <= b.length; j++) dp[0][j] = j;
+  for (let i = 1; i <= a.length; i++)
+    for (let j = 1; j <= b.length; j++)
+      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1,
+        dp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  return dp[a.length][b.length];
+}
+// Closest candidate within a sensible distance, or null.
+function suggest(word, candidates) {
+  let best = null, bestD = Infinity;
+  for (const c of candidates) {
+    const d = editDistance(word, c);
+    if (d < bestD) { bestD = d; best = c; }
+  }
+  const limit = word.length <= 3 ? 1 : word.length <= 6 ? 2 : 3;
+  return bestD <= limit ? best : null;
+}
+const didYouMean = (word, list) => {
+  const s = suggest(word, list);
+  return s ? `, did you mean "${s}"?` : ".";
+};
+
+// Color helpers: validate via CSS, resolve to RGB with a scratch canvas.
+const COLOR_NAMES = ["red","orange","yellow","gold","green","lime","limegreen","teal","cyan","aqua",
+  "blue","navy","purple","violet","magenta","pink","hotpink","white","black","gray","grey","silver",
+  "brown","maroon","coral","salmon","crimson","tomato","orchid","indigo","turquoise","skyblue","khaki",
+  "beige","olive","chocolate","tan","plum","lavender","slateblue","darkgreen","darkblue","darkred",
+  "lightblue","lightgreen","royalblue","firebrick","seagreen","steelblue","goldenrod","orangered"];
+function isColor(v) {
+  if (!v) return false;
+  if (window.CSS && CSS.supports) return CSS.supports("color", v);
+  const s = new Option().style; s.color = v; return s.color !== "";
+}
+const scratch = document.createElement("canvas").getContext("2d");
+const rgbCache = new Map();
+function toRGB(c) {
+  if (rgbCache.has(c)) return rgbCache.get(c);
+  scratch.fillStyle = "#000"; scratch.fillStyle = c;
+  const v = scratch.fillStyle;
+  let rgb;
+  if (v[0] === "#") rgb = [1, 3, 5].map(i => parseInt(v.slice(i, i + 2), 16));
+  else rgb = (v.match(/[\d.]+/g) || [0, 0, 0]).slice(0, 3).map(Number);
+  rgbCache.set(c, rgb);
+  return rgb;
+}
+// amt > 0 mixes toward white, amt < 0 toward black.
+function shade(c, amt) {
+  const [r, g, b] = toRGB(c);
+  const t = amt > 0 ? 255 : 0, k = Math.abs(amt);
+  const m = x => Math.round(x + (t - x) * k);
+  return `rgb(${m(r)},${m(g)},${m(b)})`;
+}
+const escapeHTML = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+// Strip a // comment that is not inside a "string".
+function stripComment(line) {
+  let inStr = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') inStr = !inStr;
+    else if (!inStr && ch === "/" && line[i + 1] === "/") return line.slice(0, i);
+  }
+  return line;
+}
+function measureIndent(line) {
+  let n = 0;
+  for (const ch of line) { if (ch === " ") n++; else if (ch === "\t") n += 4; else break; }
+  return n;
+}
+
+/* ====================================================== 3.4 COMPILER */
+/*
+  compile(source) -> { program, errors, warnings }
+  The language is line-based: unindented lines open a block (entity or rule)
+  or set a global directive, and indented lines belong to the block above.
+  Every problem is reported with its line number and, when we can guess the
+  intent, a "did you mean" fix. Names are case-insensitive.
+*/
+function compile(src) {
+  const program = {
+    title: "Untitled Game", background: "#1b1f2a", lives: 3,
+    entities: [], byName: {}, events: [], goals: [],
+  };
+  const errors = [], warnings = [];
+  const err  = (line, msg, hint) => errors.push({ line, msg, hint });
+  const warn = (line, msg, hint) => warnings.push({ line, msg, hint });
+  const nameRefs = [];  // [{name, line, what}] checked once all entities are known
+  const seen = {};      // directive -> line, to flag duplicates
+
+  let block = null;     // {kind:'entity', ent} | {kind:'event'|'goal', rule}
+  let blockIndent = null;
+  const lines = src.split("\n");
+
+  const num = (s) => (/^-?\d+(\.\d+)?$/.test(s) ? parseFloat(s) : NaN);
+
+  for (let i = 0; i < lines.length; i++) {
+    const ln = i + 1;
+    const code = stripComment(lines[i].replace(/\r$/, ""));
+    if (!code.trim()) continue;
+    const indent = measureIndent(code);
+    const text = code.trim();
+    const words = text.split(/\s+/);
+    const head = words[0].toUpperCase();
+    const rest = text.slice(words[0].length).trim();
+
+    /* ---------- top-level lines ---------- */
+    if (indent === 0) {
+      block = null; blockIndent = null;
+
+      if (head === "TITLE") {
+        const m = rest.match(/^"([^"]*)"$/);
+        if (!m) err(ln, `TITLE needs its text in double quotes.`,
+          `Try: TITLE "${rest.replace(/"/g, "") || "My Game"}"`);
+        else program.title = m[1];
+        if (seen.TITLE) warn(ln, `TITLE is set twice (first on line ${seen.TITLE}); the last one wins.`);
+        seen.TITLE = ln;
+      }
+      else if (head === "BACKGROUND") {
+        if (!rest) err(ln, `BACKGROUND needs a color.`, `Try: BACKGROUND #1d2b3a  or  BACKGROUND navy`);
+        else if (!isColor(rest)) err(ln, `Unknown color "${rest}"${didYouMean(rest, COLOR_NAMES)}`,
+          `Use a hex code like #1d2b3a or a CSS color name like navy.`);
+        else program.background = rest;
+      }
+      else if (head === "LIVES") {
+        const n = num(rest);
+        if (!Number.isInteger(n) || n < 1 || n > 99)
+          err(ln, `LIVES needs a whole number from 1 to 99${rest ? `, got "${rest}"` : ""}.`, `Try: LIVES 3`);
+        else program.lives = n;
+      }
+      else if (ENTITY_TYPES.includes(head)) {
+        const name = (words[1] || "").replace(/:$/, "");
+        if (!name) { err(ln, `${head} needs a name.`, `Try: ${head} ${head === "PLAYER" ? "hero" : head === "ITEM" ? "coin" : "slime"}`); continue; }
+        if (words.length > 2) { err(ln, `Entity names can't contain spaces ("${words.slice(1).join(" ")}").`, `Try: ${head} ${words.slice(1).join("_")}`); continue; }
+        if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) { err(ln, `"${name}" isn't a valid name.`, `Use letters, digits and _ only, starting with a letter.`); continue; }
+        const key = name.toLowerCase();
+        if ([...TOP_LEVEL, ...ACTIONS, ...Object.keys(PROPS), "TOUCH"].includes(name.toUpperCase())) {
+          err(ln, `"${name}" is a keyword and can't be used as a name.`, `Pick another name, e.g. my_${key}`); continue;
+        }
+        if (program.byName[key]) { err(ln, `"${name}" is already defined on line ${program.byName[key].line}.`, `Give each entity a unique name.`); continue; }
+        const d = DEFAULTS[head];
+        const ent = {
+          type: head, name, key, line: ln,
+          color: d.color, size: d.size, speed: d.speed, start: null,
+          controls: "both", count: 1, ai: d.ai, aiTarget: null, aiLine: ln, respawn: false,
+        };
+        program.entities.push(ent);
+        program.byName[key] = ent;
+        block = { kind: "entity", ent };
+      }
+      else if (head === "ON") {
+        const m = text.match(/^ON\s+(\S+)\s+(\S+)\s+([^\s:]+)\s*(:?)\s*$/i);
+        if (!m) { err(ln, `A rule looks like: ON <thing> TOUCH <thing>:`, `Try: ON hero TOUCH coin:`); continue; }
+        const [, a, verb, b, colon] = m;
+        if (verb.toUpperCase() !== "TOUCH" && verb.toUpperCase() !== "TOUCHES") {
+          err(ln, `Unknown event "${verb}"${didYouMean(verb, ["TOUCH"])}`, `Rules use TOUCH, e.g. ON ${a} TOUCH ${b}:`); continue;
+        }
+        if (!colon) err(ln, `Missing ":" at the end of the rule.`, `Try: ON ${a} TOUCH ${b}:`);
+        const rule = { a: a.toLowerCase(), b: b.toLowerCase(), actions: [], line: ln };
+        nameRefs.push({ name: a, line: ln, what: "rule" }, { name: b, line: ln, what: "rule" });
+        program.events.push(rule);
+        block = { kind: "event", rule };
+      }
+      else if (head === "WHEN") {
+        const m = text.match(/^WHEN\s+SCORE\s+(?:REACHES|>=)\s+(\S+?)\s*(:?)\s*$/i);
+        if (!m) { err(ln, `A score goal looks like: WHEN SCORE REACHES <number>:`, `Try: WHEN SCORE REACHES 100:`); continue; }
+        const n = num(m[1]);
+        if (!Number.isInteger(n) || n < 0) { err(ln, `"${m[1]}" isn't a whole number.`, `Try: WHEN SCORE REACHES 100:`); continue; }
+        if (!m[2]) err(ln, `Missing ":" at the end of the rule.`, `Try: WHEN SCORE REACHES ${n}:`);
+        const rule = { score: n, actions: [], line: ln };
+        program.goals.push(rule);
+        block = { kind: "goal", rule };
+      }
+      else if (PROPS[head]) {
+        err(ln, `${head} is a property and must be indented under a PLAYER, ITEM or ENEMY.`, `Add 2 spaces in front: "  ${text}"`);
+      }
+      else if (ACTIONS.includes(head)) {
+        err(ln, `${head} is an action and must be indented under an ON ... TOUCH rule.`, `Add 2 spaces in front: "  ${text}"`);
+      }
+      else {
+        const s = suggest(head, TOP_LEVEL);
+        err(ln, `Unknown command "${words[0]}"${s ? `, did you mean "${s}"?` : "."}`,
+          s ? undefined : `Lines start with TITLE, BACKGROUND, LIVES, PLAYER, ITEM, ENEMY, ON or WHEN.`);
+      }
+      continue;
+    }
+
+    /* ---------- indented lines ---------- */
+    if (!block) {
+      err(ln, `This line is indented but isn't inside a PLAYER, ITEM, ENEMY or ON block.`,
+        `Remove the leading spaces, or add a block header above it.`);
+      continue;
+    }
+    if (indent % 2 !== 0) warn(ln, `Odd indentation (${indent} spaces).`, `Use 2 or 4 spaces.`);
+    if (blockIndent === null) blockIndent = indent;
+    else if (indent !== blockIndent)
+      warn(ln, `Indentation changed from ${blockIndent} to ${indent} spaces inside the same block.`, `Line every property up the same way.`);
+
+    if (block.kind === "entity") {
+      const ent = block.ent;
+      if (!PROPS[head]) {
+        if (ACTIONS.includes(head)) { err(ln, `${head} is an action; actions go under an ON ... TOUCH rule, not under ${ent.type} ${ent.name}.`); continue; }
+        err(ln, `Unknown property "${words[0]}"${didYouMean(head, Object.keys(PROPS))}`,
+          suggest(head, Object.keys(PROPS)) ? undefined : `${ent.type} properties: ${Object.keys(PROPS).filter(p => PROPS[p].includes(ent.type)).join(", ")}`);
+        continue;
+      }
+      if (!PROPS[head].includes(ent.type)) {
+        err(ln, `${head} only works on ${PROPS[head].join(" / ")}, but "${ent.name}" is ${ent.type === "ENEMY" ? "an" : "a"} ${ent.type}.`); continue;
+      }
+      switch (head) {
+        case "COLOR":
+          if (!rest) err(ln, `COLOR needs a value.`, `Try: COLOR gold  or  COLOR #ffcc00`);
+          else if (!isColor(rest)) err(ln, `Unknown color "${rest}"${didYouMean(rest, COLOR_NAMES)}`, `Use a hex code like #ffcc00 or a CSS color name.`);
+          else ent.color = rest;
+          break;
+        case "SIZE": {
+          const n = num(rest);
+          if (isNaN(n) || n < 4 || n > 200) err(ln, `SIZE needs a number from 4 to 200${rest ? `, got "${rest}"` : ""}.`, `Try: SIZE 24`);
+          else ent.size = n;
+          break;
+        }
+        case "SPEED": {
+          const n = num(rest);
+          if (isNaN(n) || n < 0 || n > 20) err(ln, `SPEED needs a number from 0 to 20${rest ? `, got "${rest}"` : ""}.`, `Try: SPEED 3`);
+          else ent.speed = n;
+          break;
+        }
+        case "START": {
+          const m = rest.match(/^(-?\d+(?:\.\d+)?)\s*,?\s*(-?\d+(?:\.\d+)?)$/);
+          if (!m) { err(ln, `START needs two numbers: x, y.`, `Try: START 300, 200`); break; }
+          let x = +m[1], y = +m[2];
+          if (x < 0 || x > W || y < 0 || y > H) {
+            warn(ln, `START ${x}, ${y} is outside the 600 × 400 screen; it will be clamped.`);
+            x = Math.max(0, Math.min(W, x)); y = Math.max(0, Math.min(H, y));
+          }
+          ent.start = { x, y };
+          break;
+        }
+        case "CONTROLS": {
+          const v = (words[1] || "").toLowerCase();
+          if (!CONTROL_SCHEMES.includes(v) || words.length > 2)
+            err(ln, `CONTROLS must be "arrows" or "wasd"${v ? `, got "${words.slice(1).join(" ")}"` : ""}${v && suggest(v, CONTROL_SCHEMES) ? ` (did you mean "${suggest(v, CONTROL_SCHEMES)}"?)` : "."}`);
+          else ent.controls = v;
+          break;
+        }
+        case "COUNT": {
+          const n = num(rest);
+          if (!Number.isInteger(n) || n < 1 || n > 100) err(ln, `COUNT needs a whole number from 1 to 100${rest ? `, got "${rest}"` : ""}.`, `Try: COUNT 5`);
+          else ent.count = n;
+          break;
+        }
+        case "AI": {
+          const mode = (words[1] || "").toLowerCase();
+          if (!AI_MODES.includes(mode)) {
+            err(ln, `Unknown AI "${words[1] || ""}"${mode ? didYouMean(mode, AI_MODES) : "."}`, `Use "AI chase <target>" or "AI wander".`); break;
+          }
+          if (mode === "wander" && words.length > 2) warn(ln, `"AI wander" doesn't take a target; "${words.slice(2).join(" ")}" is ignored.`);
+          if (mode === "chase" && words.length > 3) err(ln, `"AI chase" takes one target name.`, `Try: AI chase hero`);
+          ent.ai = mode;
+          ent.aiTarget = mode === "chase" && words[2] ? words[2].toLowerCase() : null;
+          ent.aiLine = ln;
+          if (ent.aiTarget) nameRefs.push({ name: words[2], line: ln, what: "chase target" });
+          break;
+        }
+        case "RESPAWN":
+          if (rest) warn(ln, `RESPAWN doesn't take a value; "${rest}" is ignored.`);
+          ent.respawn = true;
+          break;
+      }
+      continue;
+    }
+
+    // Inside a rule (ON ... TOUCH or WHEN SCORE ...): actions.
+    const rule = block.rule;
+    if (!ACTIONS.includes(head)) {
+      if (head === "GAME" && (words[1] || "").toUpperCase() === "OVER") { err(ln, `Write GAME_OVER with an underscore.`, `Try: GAME_OVER`); continue; }
+      if (head === "WIN" && (words[1] || "").toUpperCase() === "GAME") { err(ln, `Write WIN_GAME with an underscore.`, `Try: WIN_GAME`); continue; }
+      if (PROPS[head]) { err(ln, `${head} is a property; it belongs under a PLAYER, ITEM or ENEMY, not inside a rule.`); continue; }
+      err(ln, `Unknown action "${words[0]}"${didYouMean(head, ACTIONS)}`,
+        suggest(head, ACTIONS) ? undefined : `Actions: ${ACTIONS.join(", ")}`);
+      continue;
+    }
+    switch (head) {
+      case "SCORE":
+      case "LIVES": {
+        const m = rest.match(/^([+-])\s*(\d+)$/);
+        if (!m) { err(ln, `${head} needs + or - and a whole number.`, `Try: ${head} ${head === "SCORE" ? "+ 10" : "- 1"}`); break; }
+        rule.actions.push({ op: head, value: (m[1] === "-" ? -1 : 1) * parseInt(m[2], 10), line: ln });
+        break;
+      }
+      case "SOUND": {
+        const s = (words[1] || "").toLowerCase();
+        if (!SOUNDS.includes(s) || words.length > 2)
+          err(ln, `Unknown sound "${words.slice(1).join(" ")}"${s ? didYouMean(s, SOUNDS) : "."}`, `Sounds: ${SOUNDS.join(", ")}`);
+        else rule.actions.push({ op: "SOUND", value: s, line: ln });
+        break;
+      }
+      case "RESET": {
+        if (words.length !== 2) { err(ln, `RESET needs one entity name.`, `Try: RESET hero`); break; }
+        rule.actions.push({ op: "RESET", value: words[1].toLowerCase(), line: ln });
+        nameRefs.push({ name: words[1], line: ln, what: "RESET target" });
+        break;
+      }
+      case "GAME_OVER":
+      case "WIN_GAME":
+        if (rest) warn(ln, `${head} doesn't take a value; "${rest}" is ignored.`);
+        rule.actions.push({ op: head, line: ln });
+        break;
+    }
+  }
+
+  /* ---------- whole-program checks ---------- */
+  const names = program.entities.map(e => e.name);
+  for (const r of nameRefs) {
+    if (!program.byName[r.name.toLowerCase()])
+      err(r.line, `Unknown entity "${r.name}"${didYouMean(r.name, names)}`,
+        names.length ? `Defined names: ${names.join(", ")}` : `Define it first, e.g. ITEM ${r.name}`);
+  }
+  const players = program.entities.filter(e => e.type === "PLAYER");
+  if (!players.length) err(1, `Your game needs a PLAYER.`, `Add for example:\nPLAYER hero\n  SPEED 3`);
+  for (const e of program.entities) {
+    if (e.ai === "chase" && !e.aiTarget && players.length) e.aiTarget = players[0].key;
+  }
+  for (const r of [...program.events, ...program.goals])
+    if (!r.actions.length) warn(r.line, `This rule has no actions yet.`, `Indent actions under it, e.g. "  SCORE + 10"`);
+  if (!program.events.length && players.length) warn(1, `No ON ... TOUCH rules yet, so nothing will happen when things collide.`);
+
+  errors.sort((a, b) => a.line - b.line);
+  warnings.sort((a, b) => a.line - b.line);
+  return { program, errors, warnings };
+}
+
+/* ========================================================= 3.5 AUDIO */
+// Tiny chiptune synth: square/triangle/saw oscillators + a noise burst.
+const audio = { ctx: null, master: null, muted: false, last: {} };
+function ac() {
+  if (!audio.ctx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    audio.ctx = new AC();
+    audio.master = audio.ctx.createGain();
+    audio.master.gain.value = audio.muted ? 0 : 0.45;
+    audio.master.connect(audio.ctx.destination);
+  }
+  if (audio.ctx.state === "suspended") audio.ctx.resume();
+  return audio.ctx;
+}
+function tone(freq, t, dur, { type = "square", vol = 0.15, to = null, dest = null } = {}) {
+  const a = audio.ctx, o = a.createOscillator(), g = a.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, t);
+  if (to) o.frequency.exponentialRampToValueAtTime(to, t + dur);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + 0.008);
+  g.gain.setValueAtTime(vol, t + dur * 0.6);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g).connect(dest || audio.master);
+  o.start(t); o.stop(t + dur + 0.03);
+}
+function noise(t, dur, vol = 0.25, cutoff = 1200) {
+  const a = audio.ctx, len = Math.ceil(a.sampleRate * dur);
+  const buf = a.createBuffer(1, len, a.sampleRate), d = buf.getChannelData(0);
+  // Sample-and-hold noise sounds crunchier / more "8-bit" than white noise.
+  let v = 0;
+  for (let i = 0; i < len; i++) { if (i % 6 === 0) v = Math.random() * 2 - 1; d[i] = v * (1 - i / len); }
+  const src = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain();
+  src.buffer = buf; f.type = "lowpass"; f.frequency.value = cutoff; g.gain.value = vol;
+  src.connect(f).connect(g).connect(audio.master);
+  src.start(t);
+}
+const SFX = {
+  // High arpeggiated chime: B5 E6 G#6 B6
+  pickup(t) { [988, 1319, 1661, 1976].forEach((f, i) => tone(f, t + i * 0.045, 0.09, { vol: 0.09 })); },
+  // Low square crunch + gritty noise
+  hit(t) {
+    noise(t, 0.2, 0.35, 1500);
+    tone(150, t, 0.22, { vol: 0.16, to: 45 });
+  },
+  // Ascending fanfare ending on a held major chord
+  win(t) {
+    [523, 659, 784, 1047].forEach((f, i) => tone(f, t + i * 0.11, 0.13, { vol: 0.11 }));
+    [1047, 1319, 1568].forEach(f => tone(f, t + 0.46, 0.6, { vol: 0.07 }));
+    tone(262, t + 0.46, 0.6, { type: "triangle", vol: 0.18 });
+  },
+  // Descending, slowing buzzer
+  lose(t) {
+    [392, 330, 277].forEach((f, i) => tone(f, t + i * 0.26, 0.24, { type: "sawtooth", vol: 0.08, to: f * 0.94 }));
+    tone(220, t + 0.8, 0.9, { type: "sawtooth", vol: 0.09, to: 82 });
+    tone(110, t + 0.8, 0.9, { type: "square", vol: 0.06, to: 41 });
+  },
+};
+function playSound(name) {
+  const a = ac(); if (!a) return;
+  // Dedupe: "SOUND win" + the VICTORY jingle in the same moment play once.
+  const now = a.currentTime;
+  if (audio.last[name] !== undefined && now - audio.last[name] < 0.35) return;
+  audio.last[name] = now;
+  SFX[name](now + 0.01);
+}
+
+/* ======================================================== 3.6 ENGINE */
+const game = {
+  program: null,
+  state: "START",        // START | PLAYING | GAME_OVER | VICTORY
+  inst: [],              // live entity instances
+  byKey: {},             // entity key -> instances
+  score: 0, lives: 3,
+  hurtT: 0,              // invulnerability timer after losing a life
+  touching: new Set(),   // pair keys touching last frame (rules fire on contact start)
+  goalsDone: new Set(),
+  particles: [], floaters: [],
+  shake: 0, time: 0, nextId: 1,
+};
+const keys = new Set();
+
+function loadProgram(program) {
+  game.program = program;
+  resetWorld();
+  setState("START");
+}
+
+function resetWorld() {
+  const p = game.program;
+  game.inst = []; game.byKey = {};
+  game.score = 0; game.lives = p.lives; game.hurtT = 0;
+  game.touching = new Set(); game.goalsDone = new Set();
+  game.particles = []; game.floaters = []; game.shake = 0;
+  // Players first, so random spawns can keep their distance from them.
+  const order = [...p.entities].sort((a, b) => (a.type === "PLAYER" ? -1 : 0) - (b.type === "PLAYER" ? -1 : 0));
+  for (const def of order) {
+    game.byKey[def.key] = [];
+    for (let k = 0; k < def.count; k++) {
+      const r = def.size / 2;
+      const inst = { id: game.nextId++, def, r, x: 0, y: 0, alive: true,
+        ang: Math.random() * Math.PI * 2, turnT: Math.random() * 2, fx: 1, fy: 0, moving: false };
+      if (def.start && k === 0) placeAtStart(inst); else placeRandom(inst);
+      game.inst.push(inst);
+      game.byKey[def.key].push(inst);
+    }
+  }
+}
+function clampInst(i) {
+  i.x = Math.max(i.r, Math.min(W - i.r, i.x));
+  i.y = Math.max(i.r, Math.min(H - i.r, i.y));
+}
+function placeAtStart(i) {
+  if (!i.def.start) return placeRandom(i);
+  i.x = i.def.start.x; i.y = i.def.start.y; clampInst(i);
+}
+// Pick a random spot away from players and not overlapping other things.
+function placeRandom(inst) {
+  const pad = 10;
+  let best = null, bestScore = -Infinity;
+  for (let t = 0; t < 40; t++) {
+    const x = inst.r + pad + Math.random() * (W - 2 * (inst.r + pad));
+    const y = inst.r + pad + 24 + Math.random() * (H - 2 * (inst.r + pad) - 24); // keep clear of the HUD row
+    let score = Infinity;
+    for (const o of game.inst) {
+      if (o === inst || !o.alive) continue;
+      const d = Math.hypot(o.x - x, o.y - y) - o.r - inst.r;
+      const need = o.def.type === "PLAYER" && inst.def.type !== "PLAYER" ? 90 : 8;
+      score = Math.min(score, d - need);
+    }
+    if (score > bestScore) { bestScore = score; best = { x, y }; }
+    if (score >= 0) break;
+  }
+  inst.x = best.x; inst.y = best.y;
+}
+
+function setState(s) {
+  game.state = s;
+  if (s === "GAME_OVER") { playSound("lose"); game.shake = 10; }
+  if (s === "VICTORY") { playSound("win"); burst(W / 2, H / 2, "#ffd166", 40); }
+  updateBanner();
+}
+function startPlaying() {
+  ac();                               // unlock audio on the user gesture
+  if (game.state !== "START") resetWorld();
+  setState("PLAYING");
+}
+
+// Input direction for a player given its control scheme.
+function inputDir(scheme) {
+  const arrows = scheme !== "wasd", wasd = scheme !== "arrows";
+  let dx = 0, dy = 0;
+  if ((arrows && keys.has("ArrowLeft"))  || (wasd && keys.has("KeyA"))) dx -= 1;
+  if ((arrows && keys.has("ArrowRight")) || (wasd && keys.has("KeyD"))) dx += 1;
+  if ((arrows && keys.has("ArrowUp"))    || (wasd && keys.has("KeyW"))) dy -= 1;
+  if ((arrows && keys.has("ArrowDown"))  || (wasd && keys.has("KeyS"))) dy += 1;
+  const len = Math.hypot(dx, dy) || 1;
+  return [dx / len, dy / len];
+}
+
+function nearestAlive(list, x, y) {
+  let best = null, bd = Infinity;
+  for (const o of list || []) {
+    if (!o.alive) continue;
+    const d = (o.x - x) ** 2 + (o.y - y) ** 2;
+    if (d < bd) { bd = d; best = o; }
+  }
+  return best;
+}
+
+function update(dt) {
+  const f = dt * 60;                  // SPEED is in pixels per 60 FPS frame
+  game.hurtT = Math.max(0, game.hurtT - dt);
+
+  // --- movement ---
+  for (const i of game.inst) {
+    if (!i.alive) continue;
+    const d = i.def;
+    let dx = 0, dy = 0;
+    if (d.type === "PLAYER") {
+      [dx, dy] = inputDir(d.controls);
+    } else if (d.ai === "chase") {
+      const t = nearestAlive(game.byKey[d.aiTarget], i.x, i.y);
+      if (t) { const len = Math.hypot(t.x - i.x, t.y - i.y); if (len > 1) { dx = (t.x - i.x) / len; dy = (t.y - i.y) / len; } }
+    } else if (d.ai === "wander" || (d.type === "ITEM" && d.speed > 0)) {
+      i.turnT -= dt;
+      if (i.turnT <= 0) { i.ang += (Math.random() - 0.5) * 2.4; i.turnT = 1 + Math.random() * 2; }
+      dx = Math.cos(i.ang); dy = Math.sin(i.ang);
+    }
+    i.moving = dx !== 0 || dy !== 0;
+    if (i.moving) { i.fx = dx; i.fy = dy; }
+    i.x += dx * d.speed * f;
+    i.y += dy * d.speed * f;
+    // Wanderers bounce off the walls.
+    if (d.type !== "PLAYER" && d.ai !== "chase") {
+      if (i.x < i.r || i.x > W - i.r) i.ang = Math.PI - i.ang;
+      if (i.y < i.r || i.y > H - i.r) i.ang = -i.ang;
+    }
+    clampInst(i);
+  }
+
+  // --- collisions + rules (circle vs circle, edge-triggered) ---
+  const now = new Set();
+  game.program.events.forEach((ev, ei) => {
+    const A = game.byKey[ev.a] || [], B = game.byKey[ev.b] || [];
+    const same = ev.a === ev.b;
+    for (let ia = 0; ia < A.length; ia++) {
+      const a = A[ia];
+      for (let ib = same ? ia + 1 : 0; ib < B.length; ib++) {
+        const b = B[ib];
+        if (!a.alive || !b.alive || a === b) continue;
+        const rr = a.r + b.r - 2;
+        if ((a.x - b.x) ** 2 + (a.y - b.y) ** 2 > rr * rr) continue;
+        const key = ei + ":" + a.id + ":" + b.id;
+        const hurts = ev.actions.some(x => x.op === "LIVES" && x.value < 0);
+        if (hurts && game.hurtT > 0) continue;       // invulnerable: try again later
+        now.add(key);
+        if (!game.touching.has(key)) fireRule(ev, a, b);
+        if (game.state !== "PLAYING") return;
+      }
+    }
+  });
+  game.touching = now;
+
+  // --- score goals ---
+  for (const g of game.program.goals) {
+    if (game.state !== "PLAYING") break;
+    if (!game.goalsDone.has(g) && game.score >= g.score) { game.goalsDone.add(g); runActions(g.actions, W / 2, H / 2); }
+  }
+  if (game.state === "PLAYING" && game.lives <= 0) setState("GAME_OVER");
+}
+
+function fireRule(ev, a, b) {
+  const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+  runActions(ev.actions, mx, my);
+  // Items are "collected": they vanish, or hop elsewhere with RESPAWN.
+  for (const i of [a, b]) {
+    if (!i.alive) continue;
+    if (i.def.type === "ITEM") {
+      burst(i.x, i.y, i.def.color, 10);
+      if (i.def.respawn) placeRandom(i); else i.alive = false;
+    } else if (i.def.respawn) {
+      placeRandom(i);
+    }
+  }
+}
+
+function runActions(actions, x, y) {
+  for (const act of actions) {
+    if (game.state !== "PLAYING") return;
+    switch (act.op) {
+      case "SCORE":
+        game.score = Math.max(0, game.score + act.value);
+        floater(x, y - 10, (act.value >= 0 ? "+" : "") + act.value, act.value >= 0 ? "#ffd166" : "#ff5c7a");
+        break;
+      case "LIVES":
+        game.lives = Math.max(0, game.lives + act.value);
+        if (act.value < 0) { game.hurtT = 1.2; game.shake = 9; burst(x, y, "#ff4d6d", 14); }
+        else floater(x, y - 10, "+♥", "#ff8fab");
+        break;
+      case "SOUND": playSound(act.value); break;
+      case "RESET": for (const i of game.byKey[act.value] || []) { if (i.alive) placeAtStart(i); } break;
+      case "GAME_OVER": setState("GAME_OVER"); return;
+      case "WIN_GAME": setState("VICTORY"); return;
+    }
+  }
+}
+
+function burst(x, y, color, n) {
+  for (let k = 0; k < n; k++) {
+    const a = Math.random() * Math.PI * 2, s = 40 + Math.random() * 140;
+    game.particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 40, life: 0.4 + Math.random() * 0.4, color });
+  }
+}
+function floater(x, y, text, color) { game.floaters.push({ x, y, text, color, life: 0.9 }); }
+
+function updateFx(dt) {
+  for (const p of game.particles) { p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 260 * dt; }
+  game.particles = game.particles.filter(p => p.life > 0);
+  for (const fl of game.floaters) { fl.life -= dt; fl.y -= 34 * dt; }
+  game.floaters = game.floaters.filter(fl => fl.life > 0);
+  game.shake = Math.max(0, game.shake - dt * 30);
+}
+
+/* ====================================================== 3.7 RENDERER */
+// The world is drawn into a 300 x 200 "art" buffer with hard-edged rect
+// rows, then upscaled 2x with smoothing off: genuine crisp pixel art.
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const art = document.createElement("canvas");
+art.width = W / PX; art.height = H / PX;
+const actx = art.getContext("2d");
+
+function rows(X, Y, R, halfAt, color) {   // fill rows y in [-R, R) with half-width halfAt(y)
+  actx.fillStyle = color;
+  for (let y = -R; y < R; y++) {
+    const h = halfAt(y);
+    if (h > 0) actx.fillRect(X - h, Y + y, h * 2, 1);
+  }
+}
+const discHalf = R => y => Math.round(Math.sqrt(Math.max(0, R * R - (y + 0.5) ** 2)));
+function disc(X, Y, R, color) { rows(X, Y, R, discHalf(R), color); }
+function ellipse(X, Y, RX, RY, color) {
+  actx.fillStyle = color;
+  for (let y = -RY; y < RY; y++) {
+    const h = Math.round(RX * Math.sqrt(Math.max(0, 1 - ((y + 0.5) / RY) ** 2)));
+    if (h > 0) actx.fillRect(X - h, Y + y, h * 2, 1);
+  }
+}
+function roundBox(X, Y, R, color) {
+  rows(X, Y, R, y => R - (y === -R || y === R - 1 ? 2 : y === -R + 1 || y === R - 2 ? 1 : 0), color);
+}
+function eyes(X, Y, R, fx, fy, angry) {
+  const off = Math.max(2, Math.round(R * 0.38)), ey = Y - Math.round(R * 0.2);
+  const lx = Math.round(fx * 1.2), ly = Math.round(fy * 1.2);
+  for (const sx of [-off, off]) {
+    actx.fillStyle = "#fff";
+    actx.fillRect(X + sx - 1, ey - 1, 3, 3);
+    actx.fillStyle = "#111";
+    actx.fillRect(X + sx + (lx > 0 ? 1 : lx < 0 ? -1 : 0), ey + (ly > 0 ? 1 : ly < 0 ? -1 : 0), 1, 1);
+    if (angry) { actx.fillStyle = "#111"; actx.fillRect(X + sx - 1, ey - 2 + (sx < 0 ? 0 : 0), 3, 1); }
+  }
+}
+
+function drawEntity(i, t) {
+  const d = i.def, X = Math.round(i.x / PX), R = Math.max(2, Math.round(i.r / PX));
+  let Y = Math.round(i.y / PX);
+  const dark = shade(d.color, -0.45), light = shade(d.color, 0.45);
+  // soft shadow
+  actx.globalAlpha = 0.28;
+  ellipse(X, Y + R - 1, Math.max(2, R - 1), Math.max(1, Math.round(R / 3)), "#000");
+  actx.globalAlpha = 1;
+
+  if (d.type === "PLAYER") {
+    if (game.hurtT > 0 && Math.floor(t * 12) % 2 === 0) return;      // blink while invulnerable
+    if (i.moving && game.state === "PLAYING") Y -= Math.abs(Math.sin(t * 14)) > 0.5 ? 1 : 0;
+    roundBox(X, Y, R, dark);
+    roundBox(X, Y, R - 1, d.color);
+    actx.fillStyle = light; actx.fillRect(X - R + 2, Y - R + 2, Math.max(1, R - 2), 1);
+    eyes(X, Y, R, i.fx, i.fy, false);
+  } else if (d.type === "ITEM") {
+    Y += Math.round(Math.sin(t * 3 + i.id) * 1.5);
+    disc(X, Y, R, dark);
+    disc(X, Y, R - 1, d.color);
+    actx.fillStyle = light;
+    actx.fillRect(X - Math.ceil(R / 2), Y - Math.ceil(R / 2), Math.max(1, Math.round(R / 3)), Math.max(1, Math.round(R / 3)));
+    // occasional sparkle
+    if ((Math.floor(t * 2 + i.id * 0.7) % 4) === 0) {
+      actx.fillStyle = "#fff";
+      actx.fillRect(X + R - 1, Y - R, 1, 3); actx.fillRect(X + R - 2, Y - R + 1, 3, 1);
+    }
+  } else {
+    // Slime: squashy dome with a flat base
+    const s = Math.sin(t * 6 + i.id);
+    const RX = Math.max(2, Math.round(R * (1 + 0.1 * s))), RY = Math.max(2, Math.round(R * (1 - 0.1 * s)));
+    const base = Math.round(RY * 0.55);
+    const shape = (rx, ry, col) => {
+      actx.fillStyle = col;
+      for (let y = -ry; y < base; y++) {
+        const h = y < 0 ? Math.round(rx * Math.sqrt(Math.max(0, 1 - ((y + 0.5) / ry) ** 2))) : rx - (y === base - 1 ? 1 : 0);
+        if (h > 0) actx.fillRect(X - h, Y + Math.round(R * 0.25) + y, h * 2, 1);
+      }
+    };
+    shape(RX, RY, dark);
+    shape(RX - 1, RY - 1, d.color);
+    actx.fillStyle = light; actx.fillRect(X - Math.round(RX / 2), Y - Math.round(RY * 0.6), 2, 1);
+    eyes(X, Y + Math.round(R * 0.15), R, i.fx, i.fy, d.ai === "chase");
+  }
+}
+
+function render() {
+  const p = game.program, t = game.time;
+  const bg = p ? p.background : "#111";
+  actx.fillStyle = bg;
+  actx.fillRect(0, 0, art.width, art.height);
+  // subtle checkerboard floor
+  actx.fillStyle = shade(bg, -0.12);
+  for (let y = 0; y < art.height; y += 8)
+    for (let x = ((y / 8) % 2) * 8; x < art.width; x += 16) actx.fillRect(x, y, 8, 8);
+
+  if (p) {
+    // draw order: items, enemies, players (players on top)
+    const order = { ITEM: 0, ENEMY: 1, PLAYER: 2 };
+    const list = game.inst.filter(i => i.alive).sort((a, b) => order[a.def.type] - order[b.def.type] || a.y - b.y);
+    for (const i of list) drawEntity(i, t);
+  }
+  for (const pt of game.particles) {
+    actx.globalAlpha = Math.min(1, pt.life * 2.5);
+    actx.fillStyle = pt.color;
+    actx.fillRect(Math.round(pt.x / PX), Math.round(pt.y / PX), 1, 1);
+  }
+  actx.globalAlpha = 1;
+
+  // upscale with hard edges (+ screen shake)
+  const sx = game.shake ? Math.round((Math.random() - 0.5) * game.shake) : 0;
+  const sy = game.shake ? Math.round((Math.random() - 0.5) * game.shake) : 0;
+  ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
+  ctx.drawImage(art, sx, sy, W, H);
+
+  // floating score text
+  ctx.font = "bold 16px Consolas, monospace";
+  ctx.textAlign = "center";
+  for (const fl of game.floaters) {
+    ctx.globalAlpha = Math.min(1, fl.life * 2);
+    ctx.fillStyle = "#000"; ctx.fillText(fl.text, Math.round(fl.x) + 2, Math.round(fl.y) + 2);
+    ctx.fillStyle = fl.color; ctx.fillText(fl.text, Math.round(fl.x), Math.round(fl.y));
+  }
+  ctx.globalAlpha = 1;
+  updateHUD();
+}
+
+/* HUD (HTML overlay, updated only when values change) */
+const hud = { score: document.getElementById("hudScore"), lives: document.getElementById("hudLives"), title: document.getElementById("hudTitle") };
+const hudCache = {};
+function setText(el, key, v) { if (hudCache[key] !== v) { hudCache[key] = v; el.textContent = v; } }
+function updateHUD() {
+  setText(hud.score, "s", "SCORE " + game.score);
+  setText(hud.lives, "l", game.lives <= 8 ? "♥".repeat(game.lives) + "♡".repeat(Math.max(0, Math.min(8, (game.program ? game.program.lives : 3)) - game.lives)) : "♥ × " + game.lives);
+  setText(hud.title, "t", game.program && game.state === "PLAYING" ? game.program.title : "");
+}
+const bannerEl = document.getElementById("banner");
+function updateBanner() {
+  const T = document.getElementById("bannerTitle"), S = document.getElementById("bannerSub"), P = document.getElementById("bannerPrompt");
+  bannerEl.className = "banner";
+  if (game.state === "PLAYING") { bannerEl.classList.add("hidden"); return; }
+  if (game.state === "START") {
+    bannerEl.classList.add("start");
+    T.textContent = (game.program ? game.program.title : "No game").toUpperCase();
+    S.textContent = "Arrows / WASD to move";
+    P.textContent = "Press SPACE or ▶ Run Game to start";
+  } else if (game.state === "GAME_OVER") {
+    bannerEl.classList.add("lose");
+    T.textContent = "GAME OVER";
+    S.textContent = "Final score: " + game.score;
+    P.textContent = "Press SPACE to Restart";
+  } else {
+    bannerEl.classList.add("win");
+    T.textContent = "VICTORY!";
+    S.textContent = "Final score: " + game.score;
+    P.textContent = "Press SPACE to Restart";
+  }
+}
+
+/* Main loop: requestAnimationFrame with delta timing (clamped for tab switches). */
+let lastT = performance.now();
+function frame(now) {
+  let dt = (now - lastT) / 1000;
+  lastT = now;
+  if (dt > 0.05) dt = 0.05;
+  if (dt < 0) dt = 0;
+  game.time += dt;
+  if (game.state === "PLAYING" && game.program) update(dt);
+  updateFx(dt);
+  render();
+  requestAnimationFrame(frame);
+}
+
+/* ===================================================== 3.8 EDITOR UI */
+const ta = document.getElementById("code");
+const hl = document.getElementById("highlight");
+const gutter = document.getElementById("gutter");
+const consoleBody = document.getElementById("consoleBody");
+const statusPill = document.getElementById("statusPill");
+const dirtyNote = document.getElementById("dirtyNote");
+const stage = document.getElementById("stage");
+const demoSelect = document.getElementById("demoSelect");
+let lastResult = null;       // most recent compile result
+let runningSource = null;    // source of the program currently loaded in the engine
+const buffers = {};          // per-demo edited text, so switching demos keeps your edits
+
+const KW_ENT = new Set(ENTITY_TYPES), KW_RULE = new Set(["ON", "TOUCH", "TOUCHES", "WHEN", "REACHES"]);
+const KW_DIR = new Set(["TITLE", "BACKGROUND", "LIVES"]);
+const KW_PROP = new Set(Object.keys(PROPS)), KW_ACT = new Set(ACTIONS);
+const KW_VAL = new Set([...SOUNDS, ...AI_MODES, ...CONTROL_SCHEMES].map(s => s.toUpperCase()));
+
+// Syntax highlighter for one line -> HTML.
+function highlightLine(line) {
+  const code = stripComment(line), comment = line.slice(code.length);
+  let html = "", prev = "", first = true, m;
+  const re = /("[^"]*"?)|(#[0-9a-fA-F]{3,8}\b)|(-?\d+(?:\.\d+)?)|([A-Za-z_][A-Za-z0-9_]*)|(\s+)|(.)/g;
+  while ((m = re.exec(code))) {
+    const tok = m[0], esc = escapeHTML(tok), U = tok.toUpperCase();
+    let cls = "";
+    if (m[1]) cls = "t-str";
+    else if (m[2]) cls = "t-num t-col";
+    else if (m[3]) cls = "t-num";
+    else if (m[4]) {
+      if (prev === "COLOR" || prev === "BACKGROUND") cls = isColor(tok) ? "t-val t-col" : "t-val";
+      else if (KW_ENT.has(U) && first) cls = "t-ent";
+      else if (KW_RULE.has(U)) cls = "t-kw";
+      else if (KW_DIR.has(U) && first && line[0] !== " ") cls = "t-dir";
+      else if (KW_PROP.has(U) && first) cls = "t-prop";
+      else if (KW_ACT.has(U) && first) cls = "t-act";
+      else if (KW_VAL.has(U)) cls = "t-val";
+      else cls = "t-name";
+    }
+    if (m[4] || m[1] || m[2] || m[3]) first = false;
+    if (m[4]) prev = U;
+    if (cls.includes("t-col")) html += `<span class="${cls}" style="border-bottom-color:${escapeHTML(tok)}">${esc}</span>`;
+    else html += cls ? `<span class="${cls}">${esc}</span>` : esc;
+  }
+  if (comment) html += `<span class="t-com">${escapeHTML(comment)}</span>`;
+  return html;
+}
+
+function renderEditor() {
+  const lines = ta.value.split("\n");
+  const errLines = new Set((lastResult ? lastResult.errors : []).map(e => e.line));
+  const warnLines = new Set((lastResult ? lastResult.warnings : []).map(e => e.line));
+  let h = "", g = "";
+  lines.forEach((line, i) => {
+    const n = i + 1, cls = errLines.has(n) ? " err" : warnLines.has(n) ? " warn" : "";
+    h += `<span class="l${cls}">${highlightLine(line)}</span>`;
+    g += `<div class="${cls.trim()}">${n}</div>`;
+  });
+  hl.innerHTML = h + '<span class="l"> </span>';   // spare line keeps scroll ranges equal
+  gutter.innerHTML = g;
+  syncScroll();
+}
+function syncScroll() {
+  hl.scrollTop = ta.scrollTop;
+  hl.scrollLeft = ta.scrollLeft;
+  gutter.style.transform = `translateY(${-ta.scrollTop}px)`;
+}
+
+// Console drawer
+function logMessages(result, extra) {
+  const items = [];
+  if (extra) items.push(extra);
+  for (const e of result.errors) items.push({ type: "error", line: e.line, text: `Error on line ${e.line}: ${e.msg}`, hint: e.hint });
+  for (const w of result.warnings) items.push({ type: "warn", line: w.line, text: `Warning on line ${w.line}: ${w.msg}`, hint: w.hint });
+  if (!result.errors.length) {
+    const p = result.program;
+    const n = (k, word) => `${k} ${word}${k === 1 ? "" : word === "entity" ? "" : "s"}`.replace(/entity$/, k === 1 ? "entity" : "entities");
+    items.push({ type: "ok", text: `Compiled "${p.title}": ${n(p.entities.length, "entity")}, ${n(p.events.length, "touch rule")}, ${n(p.goals.length, "score goal")}.` });
+  }
+  consoleBody.innerHTML = items.map(it => `
+    <div class="msg ${it.type}" ${it.line ? `data-line="${it.line}"` : ""}>
+      <span class="ic">${{ error: "✖", warn: "▲", ok: "✔", info: "›" }[it.type]}</span>
+      <span>${escapeHTML(it.text)}${it.hint ? `<span class="hint">→ ${escapeHTML(it.hint).replace(/\n/g, "<br>")}</span>` : ""}</span>
+    </div>`).join("");
+  const nE = result.errors.length;
+  statusPill.className = "status-pill " + (nE ? "bad" : "ok");
+  statusPill.textContent = nE ? `✖ ${nE} error${nE > 1 ? "s" : ""}` : `✔ compiled${result.warnings.length ? ` · ${result.warnings.length} warning${result.warnings.length > 1 ? "s" : ""}` : ""}`;
+}
+consoleBody.addEventListener("click", e => {
+  const m = e.target.closest("[data-line]");
+  if (m) jumpToLine(+m.dataset.line);
+});
+function jumpToLine(n) {
+  const lines = ta.value.split("\n");
+  let start = 0;
+  for (let i = 0; i < n - 1 && i < lines.length; i++) start += lines[i].length + 1;
+  const end = start + (lines[n - 1] || "").length;
+  ta.focus();
+  ta.setSelectionRange(start, end);
+  const lh = parseFloat(getComputedStyle(ta).lineHeight) || 20;
+  ta.scrollTop = Math.max(0, (n - 1) * lh - ta.clientHeight / 2);
+  syncScroll();
+}
+
+// Live compile (debounced) while typing.
+let compileTimer = 0;
+function liveCompile() {
+  lastResult = compile(ta.value);
+  logMessages(lastResult);
+  renderEditor();
+  updateDirty();
+}
+function updateDirty() {
+  dirtyNote.textContent = runningSource !== null && ta.value !== runningSource ? "● Script changed — press ▶ Run Game to apply" : "";
+}
+ta.addEventListener("input", () => {
+  buffers[demoSelect.value] = ta.value;
+  renderEditor();                                   // instant highlighting
+  clearTimeout(compileTimer);
+  compileTimer = setTimeout(liveCompile, 220);      // debounced compile
+  updateDirty();
+});
+ta.addEventListener("scroll", syncScroll);
+
+// Editing keys: Tab / Shift+Tab indent, Enter auto-indents, Ctrl+Enter runs.
+function insertText(text) {
+  // execCommand keeps the browser's undo stack working; fall back if unsupported.
+  if (!document.execCommand || !document.execCommand("insertText", false, text)) {
+    ta.setRangeText(text, ta.selectionStart, ta.selectionEnd, "end");
+    ta.dispatchEvent(new Event("input"));
+  }
+}
+ta.addEventListener("keydown", e => {
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); runGame(); return; }
+  const v = ta.value, s = ta.selectionStart, eSel = ta.selectionEnd;
+  const lineStart = v.lastIndexOf("\n", s - 1) + 1;
+  if (e.key === "Tab") {
+    e.preventDefault();
+    const multi = v.slice(s, eSel).includes("\n");
+    if (!e.shiftKey && !multi) { insertText("  "); return; }
+    // Indent / dedent every selected line.
+    const blockEnd = v.indexOf("\n", eSel - (eSel > s && v[eSel - 1] === "\n" ? 1 : 0));
+    const end = blockEnd === -1 ? v.length : blockEnd;
+    const chunk = v.slice(lineStart, end).split("\n");
+    const out = chunk.map(l => e.shiftKey ? l.replace(/^ {1,2}/, "") : "  " + l).join("\n");
+    ta.setSelectionRange(lineStart, end);
+    insertText(out);
+    ta.setSelectionRange(lineStart, lineStart + out.length);
+    return;
+  }
+  if (e.key === "Enter" && !e.shiftKey && s === eSel) {
+    e.preventDefault();
+    const line = v.slice(lineStart, s);
+    let indent = line.match(/^ */)[0];
+    const code = stripComment(line).trim();
+    if (indent === "" && (/:$/.test(code) || /^(PLAYER|ITEM|ENEMY)\b/i.test(code))) indent = "  ";
+    if (code === "") indent = indent;                     // keep indent on blank lines
+    insertText("\n" + indent);
+  }
+});
+
+// Drawer tabs + collapse
+document.querySelectorAll(".tab").forEach(btn => btn.addEventListener("click", () => {
+  document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b === btn));
+  consoleBody.hidden = btn.dataset.tab !== "console";
+  document.getElementById("refBody").hidden = btn.dataset.tab !== "ref";
+  document.getElementById("drawer").classList.remove("collapsed");
+}));
+document.getElementById("drawerToggle").addEventListener("click", e => {
+  const d = document.getElementById("drawer");
+  d.classList.toggle("collapsed");
+  e.currentTarget.textContent = d.classList.contains("collapsed") ? "▸" : "▾";
+});
+
+// Header controls
+function runGame() {
+  clearTimeout(compileTimer);
+  const result = compile(ta.value);
+  lastResult = result;
+  renderEditor();
+  if (result.errors.length) {
+    logMessages(result, { type: "error", text: `Run cancelled: fix the ${result.errors.length} error${result.errors.length > 1 ? "s" : ""} below (click one to jump to its line).` });
+    document.getElementById("drawer").classList.remove("collapsed");
+    consoleBody.hidden = false; document.getElementById("refBody").hidden = true;
+    document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b.dataset.tab === "console"));
+    consoleBody.classList.remove("flash"); void consoleBody.offsetWidth; consoleBody.classList.add("flash");
+    playSoundSafe("hit");
+    return false;
+  }
+  logMessages(result, { type: "info", text: `▶ Running "${result.program.title}" at ${new Date().toLocaleTimeString()}` });
+  runningSource = ta.value;
+  updateDirty();
+  loadProgram(result.program);
+  startPlaying();
+  stage.focus({ preventScroll: true });
+  return true;
+}
+function playSoundSafe(n) { try { playSound(n); } catch (_) {} }
+function loadDemo(id, pristine) {
+  if (pristine || buffers[id] === undefined) buffers[id] = DEMOS[id];
+  ta.value = buffers[id];
+  ta.scrollTop = 0;
+  lastResult = compile(ta.value);
+  logMessages(lastResult, { type: "info", text: `Loaded demo "${demoSelect.selectedOptions[0].text}". Press ▶ Run Game (or Space on the game) to play.` });
+  renderEditor();
+  if (!lastResult.errors.length) { loadProgram(lastResult.program); runningSource = ta.value; }
+  updateDirty();
+}
+document.getElementById("runBtn").addEventListener("click", runGame);
+document.getElementById("resetBtn").addEventListener("click", () => loadDemo(demoSelect.value, true));
+demoSelect.addEventListener("change", () => loadDemo(demoSelect.value, false));
+const muteBtn = document.getElementById("muteBtn");
+muteBtn.addEventListener("click", () => {
+  audio.muted = !audio.muted;
+  muteBtn.textContent = audio.muted ? "🔇" : "🔊";
+  if (audio.master) audio.master.gain.value = audio.muted ? 0 : 0.45;
+});
+
+// Game keyboard: only when the editor isn't focused (so typing never moves the player).
+const GAME_KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "KeyW", "KeyA", "KeyS", "KeyD", "Space"]);
+const typing = () => { const a = document.activeElement; return a === ta || (a && (a.tagName === "SELECT" || a.tagName === "INPUT")); };
+window.addEventListener("keydown", e => {
+  if (typing() || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (!GAME_KEYS.has(e.code)) return;
+  if (document.activeElement && document.activeElement.tagName === "BUTTON" && e.code === "Space") {
+    document.activeElement.blur();               // Space on a focused button shouldn't re-click it
+  }
+  e.preventDefault();
+  if (e.code === "Space") {
+    if (!e.repeat && game.program && game.state !== "PLAYING") { startPlaying(); stage.focus({ preventScroll: true }); }
+    return;
+  }
+  keys.add(e.code);
+});
+window.addEventListener("keyup", e => keys.delete(e.code));
+window.addEventListener("blur", () => keys.clear());
+ta.addEventListener("focus", () => keys.clear());
+stage.addEventListener("mousedown", () => {
+  setTimeout(() => stage.focus({ preventScroll: true }), 0);
+  if (game.program && game.state !== "PLAYING") startPlaying();
+});
+
+/* ============================================ 3.9 BOOT + SELF-TEST */
+function selfTest() {
+  // Open index.html?selftest to run: compiles every demo, checks error
+  // messages for typical mistakes, and simulates each demo headlessly.
+  const out = { demos: {}, errors: {}, ok: true };
+  for (const id of Object.keys(DEMOS)) {
+    const r = compile(DEMOS[id]);
+    out.demos[id] = { errors: r.errors.length, warnings: r.warnings.length };
+    if (r.errors.length) { out.ok = false; out.demos[id].list = r.errors; continue; }
+    loadProgram(r.program); startPlaying();
+    let frames = 0, maxScore = 0;
+    // Steer the first player toward the nearest non-respawning-safe item, plus random jitter.
+    for (; frames < 60 * 90 && game.state === "PLAYING"; frames++) {
+      keys.clear();
+      const pl = game.inst.find(i => i.def.type === "PLAYER");
+      const target = nearestAlive(game.inst.filter(i => i.def.type === "ITEM" && !/trap/.test(i.def.key)), pl.x, pl.y);
+      if (target) {
+        if (target.x < pl.x - 3) keys.add(pl.def.controls === "wasd" ? "KeyA" : "ArrowLeft");
+        if (target.x > pl.x + 3) keys.add(pl.def.controls === "wasd" ? "KeyD" : "ArrowRight");
+        if (target.y < pl.y - 3) keys.add(pl.def.controls === "wasd" ? "KeyW" : "ArrowUp");
+        if (target.y > pl.y + 3) keys.add(pl.def.controls === "wasd" ? "KeyS" : "ArrowDown");
+      }
+      update(1 / 60); updateFx(1 / 60);
+      maxScore = Math.max(maxScore, game.score);
+    }
+    out.demos[id].sim = { frames, state: game.state, score: game.score, lives: game.lives, maxScore };
+    render();
+  }
+  keys.clear();
+  const cases = {
+    typo: "PLAYER hero\n  SPPED 3",
+    unknownColor: "BACKGROUND bleu\nPLAYER hero",
+    noColon: "PLAYER hero\nITEM coin\nON hero TOUCH coin\n  SCORE + 1",
+    badRef: "PLAYER hero\nON hero TOUCH coins:\n  SCORE + 1",
+    badAction: "PLAYER hero\nITEM coin\nON hero TOUCH coin:\n  SCOR + 1",
+    wrongType: "PLAYER hero\n  AI chase",
+    noPlayer: "ITEM coin",
+    unindented: "PLAYER hero\nSPEED 3",
+    badSound: "PLAYER hero\nITEM c\nON hero TOUCH c:\n  SOUND pikup",
+    gameOverSpace: "PLAYER hero\nITEM c\nON hero TOUCH c:\n  GAME OVER",
+  };
+  for (const [k, src] of Object.entries(cases)) {
+    const r = compile(src);
+    out.errors[k] = r.errors.map(e => `Error on line ${e.line}: ${e.msg}`);
+    if (!r.errors.length) out.ok = false;
+  }
+  document.getElementById("selftest").textContent = JSON.stringify(out, null, 1);
+  document.getElementById("selftest").hidden = false;
+}
+
+loadDemo("coin", true);
+requestAnimationFrame(frame);
+if (/[?&]selftest\b/.test(location.search)) { selfTest(); loadDemo("coin", true); }
+</script>
+</body>
+</html>
