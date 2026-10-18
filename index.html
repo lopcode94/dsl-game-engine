@@ -294,6 +294,87 @@
   .prompt.hidden { opacity: 0; transform: translateY(8px); }
   .prompt p { margin: 0; white-space: pre-wrap; }
   .prompt-key { position: absolute; right: 3%; bottom: 7%; font-size: .75em; color: #ffd166; animation: blink 1s steps(2, start) infinite; }
+  .banner { z-index: 1; }
+  .prompt, .announce { z-index: 2; }   /* above banners, so UI previews show on the start screen */
+
+  /* UI_THEME variants (canvas bubble colors live in UI_THEME_STYLES in the JS) */
+  .stage[data-ui="parchment"] .prompt { background: #f3e3bf; color: #4a3520; border-color: #8a5a2b; box-shadow: 0 0 0 3px #3b2512, 0 10px 30px rgba(0,0,0,.5); text-shadow: none; font-family: Georgia, "Times New Roman", serif; }
+  .stage[data-ui="parchment"] .prompt-key { color: #8a3b12; }
+  .stage[data-ui="parchment"] .hud-top { color: #ffe8b8; font-family: Georgia, serif; }
+  .stage[data-ui="parchment"] .announce { color: #ffe8b8; font-family: Georgia, serif; text-shadow: 3px 3px 0 #3b2512, 0 0 18px rgba(255,190,90,.6); }
+  .stage[data-ui="neon"] .prompt { background: rgba(6,8,20,.92); color: #7df9ff; border-color: #ff2fd6; box-shadow: 0 0 0 3px #12002a, 0 0 22px rgba(255,47,214,.6); text-shadow: 0 0 6px rgba(125,249,255,.8); }
+  .stage[data-ui="neon"] .prompt-key { color: #ff2fd6; }
+  .stage[data-ui="neon"] .hud-top { color: #7df9ff; text-shadow: 0 0 8px #ff2fd6, 2px 2px 0 #000; }
+  .stage[data-ui="neon"] .announce { color: #7df9ff; text-shadow: 0 0 10px #ff2fd6, 0 0 22px #ff2fd6; }
+  .stage[data-ui="candy"] .prompt { background: #ffe3f1; color: #7a2e5b; border-color: #ff6fb5; border-radius: 18px; box-shadow: 0 0 0 3px #fff, 0 8px 24px rgba(255,111,181,.45); text-shadow: none; font-family: "Trebuchet MS", "Segoe UI", sans-serif; }
+  .stage[data-ui="candy"] .prompt-key { color: #ff3d9a; }
+  .stage[data-ui="candy"] .hud-top { color: #fff0f8; text-shadow: 2px 2px 0 #c2407f; }
+  .stage[data-ui="candy"] .announce { color: #fff0f8; text-shadow: 3px 3px 0 #c2407f, 0 0 18px rgba(255,111,181,.8); }
+  .stage.placing, .stage.placing canvas { cursor: crosshair; }
+  .stage.placing { box-shadow: 0 0 0 3px var(--warn), 0 18px 50px rgba(0,0,0,.5); }
+
+  /* Left panel tabs: Script / Assets */
+  .panel-tabs { display: flex; gap: 4px; }
+  .ptab, .atab { background: transparent; border: 0; padding: 4px 10px; color: var(--muted); border-radius: 6px; font-size: 12px; }
+  .ptab { text-transform: uppercase; letter-spacing: 1px; }
+  .ptab.active, .atab.active { color: var(--text); background: #252c3a; }
+  .btn-s { padding: 4px 10px; font-size: 12.5px; text-transform: none; letter-spacing: 0; }
+  .editor[hidden], .assets[hidden] { display: none; }
+
+  /* Asset panel */
+  .assets { flex: 1; min-height: 0; overflow: auto; background: #10141c; }
+  .asset-tabs { display: flex; align-items: center; gap: 4px; padding: 8px 10px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: #121722; z-index: 1; }
+  .asset-tabs .spacer { flex: 1; }
+  .asset-note { font-size: 11.5px; color: var(--muted); }
+  .asset-section { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .asset-section h3 { margin: 6px 0 0; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+  .asset-section h3 .count { background: #252c3a; color: var(--text); border-radius: 999px; padding: 0 7px; letter-spacing: 0; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+  .card { background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 6px 6px; display: flex; flex-direction: column; align-items: center; gap: 3px; text-align: center; font-size: 12.5px; }
+  .card.selected { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .card canvas { width: 56px; height: 56px; image-rendering: pixelated; }
+  .badge { font: 600 9.5px var(--code-font); color: var(--muted); letter-spacing: .5px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 11px 3px 4px; border-radius: 999px; font-size: 12.5px; }
+  .chip canvas { width: 30px; height: 30px; flex: none; image-rendering: pixelated; }
+  .chip.text-only { padding: 4px 12px; }
+  .inspector { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 8px 10px; align-items: center; }
+  .inspector .full { grid-column: 1 / -1; }
+  .inspector .head { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; font-weight: 600; }
+  .inspector .head canvas { width: 40px; height: 40px; image-rendering: pixelated; }
+  .inspector > label { color: var(--muted); font-size: 12px; }
+  .inspector input[type=text], .inspector input[type=number], .inspector select, .inspector textarea {
+    width: 100%; font: 13px var(--code-font); color: var(--text); background: #0f131b;
+    border: 1px solid var(--line); border-radius: 6px; padding: 5px 7px;
+  }
+  .inspector input[type=number] { width: 80px; }
+  .inspector textarea { resize: vertical; min-height: 60px; }
+  .inspector input[type=color] { width: 40px; height: 30px; padding: 0 2px; border: 1px solid var(--line); border-radius: 6px; background: #0f131b; flex: none; }
+  .row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .row input[type=range] { flex: 1; min-width: 0; accent-color: var(--accent); }
+  .row output { font: 12px var(--code-font); min-width: 44px; text-align: right; color: #ffd866; }
+  .btns { display: flex; flex-wrap: wrap; gap: 6px; }
+  .btn-danger { color: #ffb3c1; }
+  .btn-accent { background: #2a2350; border-color: #4b3c99; }
+  .field-err { color: var(--err); font-size: 12px; }
+  .hint-s { color: var(--muted); font-size: 12px; }
+  .snippet { margin: 0; padding: 8px 10px; border-radius: 6px; background: #0c0f15; border: 1px solid var(--line); font: 12px/18px var(--code-font); white-space: pre; overflow: auto; }
+  .empty { color: var(--muted); font-size: 12.5px; padding: 4px 0; }
+  .list { display: flex; flex-direction: column; gap: 6px; }
+  .list-row { display: flex; align-items: center; gap: 8px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px; font-size: 13px; text-align: left; }
+  .list-row.selected { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .list-row .name { font-family: var(--code-font); font-weight: 600; }
+  .list-row .desc { flex: 1; color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .list-row canvas { width: 90px; height: 24px; flex: none; }
+  .play { width: 28px; height: 28px; padding: 0; border-radius: 50%; flex: none; }
+  .theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 8px; }
+  .theme-card { border-radius: 10px; padding: 10px; border: 2px solid var(--line); display: flex; flex-direction: column; gap: 7px; align-items: flex-start; text-align: left; }
+  .theme-card.selected { border-color: var(--accent); }
+  .theme-card .tname { font-size: 12px; font-weight: 700; color: #fff; text-shadow: 1px 1px 0 #000; }
+  .mini-bubble { font-size: 11px; padding: 3px 8px; border-radius: 7px; border: 2px solid; font-weight: 700; }
+  .mini-box { align-self: stretch; font-size: 11px; padding: 5px 7px; border-radius: 5px; border: 2px solid; }
+  .toggles { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; }
+  .toggles label { display: flex; align-items: center; gap: 6px; }
   .controls-hint { color: var(--muted); font-size: 12.5px; text-align: center; }
   .controls-hint .kbd { margin: 0 1px; }
   .dirty-note { color: var(--warn); font-size: 12.5px; min-height: 18px; }
@@ -325,10 +406,25 @@
   <!-- Left: script editor + console -->
   <section class="panel editor-panel">
     <div class="panel-title">
-      Script <span class="spacer"></span>
-      <span class="kbd">Tab</span> indent <span class="kbd">Ctrl+Enter</span> run
+      <div class="panel-tabs">
+        <button class="ptab active" data-ptab="script">📝 Script</button>
+        <button class="ptab" data-ptab="assets">🎨 Assets</button>
+      </div>
+      <span class="spacer"></span>
+      <span id="scriptKeys"><span class="kbd">Tab</span> indent <span class="kbd">Ctrl+Enter</span> run</span>
+      <button class="btn-s" id="assetUndo" hidden title="Undo the last change made in the Assets panel">↶ Undo</button>
     </div>
-    <div class="editor">
+    <div class="assets" id="assets" hidden>
+      <div class="asset-tabs">
+        <button class="atab active" data-atab="objects">🧱 Objects</button>
+        <button class="atab" data-atab="sounds">🔊 Sounds</button>
+        <button class="atab" data-atab="ui">💬 UI</button>
+        <span class="spacer"></span>
+        <span class="asset-note">Edits write into your script</span>
+      </div>
+      <div id="assetBody"></div>
+    </div>
+    <div class="editor" id="editorPane">
       <div class="gutter"><div class="gutter-inner" id="gutter"></div></div>
       <div class="code-wrap">
         <pre id="highlight" aria-hidden="true"></pre>
@@ -361,6 +457,22 @@
           <tr><td>AI chase hero</td><td>ENEMY: chase a target (default: first PLAYER)</td></tr>
           <tr><td>AI wander</td><td>ENEMY: roam and bounce off walls</td></tr>
           <tr><td>RESPAWN</td><td>Jump to a new random spot when touched (items vanish without it)</td></tr>
+          <tr><td>SHAPE star</td><td>box, circle, slime, villager, star, heart, gem, ghost or chest</td></tr>
+          <tr><td>AI none</td><td>ENEMY/NPC: stand still</td></tr>
+        </table>
+        <h4>Sounds: ADD SOUND &lt;name&gt;</h4>
+        <table>
+          <tr><td>WAVE square</td><td>square, triangle, sawtooth, sine or noise</td></tr>
+          <tr><td>NOTES C5 E5 G5</td><td>Notes played in turn (note names or Hz, up to 16)</td></tr>
+          <tr><td>STEP 0.06</td><td>Seconds between notes</td></tr>
+          <tr><td>LENGTH 0.1</td><td>Seconds each note lasts</td></tr>
+          <tr><td>SLIDE 0.5</td><td>Pitch glide per note (0.5 = down an octave, 2 = up)</td></tr>
+          <tr><td>VOLUME 50</td><td>0 to 100. Then use it with SOUND &lt;name&gt;</td></tr>
+        </table>
+        <h4>UI</h4>
+        <table>
+          <tr><td>UI_THEME neon</td><td>classic, parchment, neon or candy (bubbles, dialogue boxes, HUD)</td></tr>
+          <tr><td>HUD SCORE OFF</td><td>Hide SCORE, LIVES or TITLE from the HUD</td></tr>
         </table>
         <h4>ADD declarations</h4>
         <table>
@@ -696,8 +808,14 @@ WHEN SCORE REACHES 200:
 /* =============================================== 3.2 LANGUAGE TABLES */
 const ENTITY_TYPES = ["PLAYER", "ITEM", "ENEMY", "NPC"];
 // "ADD <kind> <name>" spellings -> internal kind (PROMPT is a dialogue box, not an entity).
-const ADD_KINDS = { CHARACTER: "PLAYER", PLAYER: "PLAYER", NPC: "NPC", ITEM: "ITEM", ENEMY: "ENEMY", PROMPT: "PROMPT", DIALOGUE: "PROMPT" };
-const TOP_LEVEL = ["TITLE", "BACKGROUND", "LIVES", "ADD", "PLAYER", "ITEM", "ENEMY", "NPC", "ON", "WHEN", "SAY", "SHOW"];
+const ADD_KINDS = { CHARACTER: "PLAYER", PLAYER: "PLAYER", NPC: "NPC", ITEM: "ITEM", ENEMY: "ENEMY", PROMPT: "PROMPT", DIALOGUE: "PROMPT", SOUND: "SOUND" };
+const TOP_LEVEL = ["TITLE", "BACKGROUND", "LIVES", "UI_THEME", "HUD", "ADD", "PLAYER", "ITEM", "ENEMY", "NPC", "ON", "WHEN", "SAY", "SHOW"];
+const SHAPES = ["box", "circle", "slime", "villager", "star", "heart", "gem", "ghost", "chest"];
+const DEFAULT_SHAPE = { PLAYER: "box", ITEM: "circle", ENEMY: "slime", NPC: "villager" };
+const SOUND_PROPS = ["WAVE", "NOTES", "STEP", "LENGTH", "SLIDE", "VOLUME"];
+const WAVES = ["square", "triangle", "sawtooth", "sine", "noise"];
+const UI_THEMES = ["classic", "parchment", "neon", "candy"];
+const HUD_PARTS = ["SCORE", "LIVES", "TITLE"];
 // Which entity types each property is allowed on.
 const ALL_TYPES = ["PLAYER", "ITEM", "ENEMY", "NPC"];
 const PROPS = {
@@ -709,11 +827,12 @@ const PROPS = {
   COUNT:    ["ITEM", "ENEMY", "NPC"],
   AI:       ["ENEMY", "NPC"],
   RESPAWN:  ALL_TYPES,
+  SHAPE:    ALL_TYPES,
 };
 const PROMPT_PROPS = ["TEXT", "DURATION", "WAIT_FOR_KEY"];
 const ACTIONS = ["SCORE", "LIVES", "SOUND", "RESET", "GAME_OVER", "WIN_GAME", "SAY", "SHOW", "ADD", "LOSE", "MOVE"];
 const SOUNDS = ["pickup", "hit", "win", "lose"];
-const AI_MODES = ["chase", "wander"];
+const AI_MODES = ["chase", "wander", "none"];
 const CONTROL_SCHEMES = ["arrows", "wasd"];
 // Per-type defaults so a bare "ENEMY bob" still does something sensible.
 const DEFAULTS = {
@@ -784,6 +903,15 @@ function shade(c, amt) {
 }
 const escapeHTML = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
+// A note name (C5, F#4, Bb3) or a frequency in Hz -> frequency, or NaN.
+function noteFreq(tok) {
+  if (/^\d+(\.\d+)?$/.test(tok)) { const f = +tok; return f >= 20 && f <= 8000 ? f : NaN; }
+  const m = tok.match(/^([A-Ga-g])([#b]?)(\d)$/);
+  if (!m) return NaN;
+  const semis = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[m[1].toUpperCase()] + (m[2] === "#" ? 1 : m[2] === "b" ? -1 : 0);
+  return 440 * Math.pow(2, (12 * (+m[3] + 1) + semis - 69) / 12);
+}
+
 // Strip a // comment that is not inside a "string".
 function stripComment(line) {
   let inStr = false;
@@ -814,6 +942,9 @@ function compile(src) {
     entities: [], byName: {}, events: [], goals: [],
     prompts: {},   // dialogue boxes by lower-case name
     intro: [],     // top-level SAYS / SAY / SHOW lines, run when the game starts
+    sounds: {},    // ADD SOUND definitions by lower-case name
+    uiTheme: "classic",
+    hud: { score: true, lives: true, title: true },
   };
   const errors = [], warnings = [];
   const err  = (line, msg, hint) => errors.push({ line, msg, hint });
@@ -828,21 +959,23 @@ function compile(src) {
   const num = (s) => (/^-?\d+(\.\d+)?$/.test(s) ? parseFloat(s) : NaN);
   const second = (w) => (w[1] || "").toUpperCase();   // 2nd word of a line, upper-cased
   const promptRefs = [];  // SHOW DIALOGUE <name>, checked at the end
+  const soundRefs = [];   // SOUND <name>, checked at the end (custom sounds may be defined later)
   const allNames = {};    // entities and dialogues share one namespace: key -> line
+  const soundNames = {};  // sounds have their own, so "ITEM coin" and "ADD SOUND coin" can coexist
   const RESERVED = new Set([...TOP_LEVEL, ...ACTIONS, ...Object.keys(PROPS), ...Object.keys(ADD_KINDS),
     ...PROMPT_PROPS, "TOUCH", "SAYS", "TO", "LIFE"]);
   const EXAMPLE = { PLAYER: "hero", ITEM: "coin", ENEMY: "slime", NPC: "elder", PROMPT: "intro" };
 
   // Validates the name after "PLAYER", "ADD NPC", "ADD DIALOGUE"...; returns it or null.
-  function claimName(ln, label, rest, example) {
+  function claimName(ln, label, rest, example, space = allNames) {
     const name = (rest[0] || "").replace(/:$/, "");
     if (!name) { err(ln, `${label} needs a name.`, `Try: ${label} ${example}`); return null; }
     if (rest.length > 1) { err(ln, `Names can't contain spaces ("${rest.join(" ")}").`, `Try: ${label} ${rest.join("_")}`); return null; }
     if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) { err(ln, `"${name}" isn't a valid name.`, `Use letters, digits and _ only, starting with a letter.`); return null; }
     if (RESERVED.has(name.toUpperCase())) { err(ln, `"${name}" is a keyword and can't be used as a name.`, `Pick another name, e.g. my_${name.toLowerCase()}`); return null; }
     const key = name.toLowerCase();
-    if (allNames[key]) { err(ln, `"${name}" is already defined on line ${allNames[key]}.`, `Give everything a unique name.`); return null; }
-    allNames[key] = ln;
+    if (space[key]) { err(ln, `"${name}" is already defined on line ${space[key]}.`, `Give everything a unique name.`); return null; }
+    space[key] = ln;
     return name;
   }
 
@@ -853,7 +986,7 @@ function compile(src) {
     const ent = {
       type, name, key, line: ln,
       color: d.color, size: d.size, speed: d.speed, start: null,
-      controls: "both", count: 1, ai: d.ai, aiTarget: null, aiLine: ln, respawn: false,
+      controls: "both", count: 1, ai: d.ai, aiTarget: null, aiLine: ln, respawn: false, shape: null,
     };
     program.entities.push(ent);
     program.byName[key] = ent;
@@ -913,10 +1046,9 @@ function compile(src) {
         break;
       }
       case "SOUND": {
-        const s = (words[1] || "").toLowerCase();
-        if (!SOUNDS.includes(s) || words.length > 2)
-          err(ln, `Unknown sound "${words.slice(1).join(" ")}"${s ? didYouMean(s, SOUNDS) : "."}`, `Sounds: ${SOUNDS.join(", ")}`);
-        else list.push({ op: "SOUND", value: s, line: ln });
+        if (words.length !== 2) { err(ln, `SOUND needs one sound name.`, `Try: SOUND pickup  (built-in: ${SOUNDS.join(", ")})`); break; }
+        list.push({ op: "SOUND", value: words[1].toLowerCase(), line: ln });
+        soundRefs.push({ name: words[1], line: ln });
         break;
       }
       case "RESET": {
@@ -994,6 +1126,20 @@ function compile(src) {
           err(ln, `LIVES needs a whole number from 1 to 99${rest ? `, got "${rest}"` : ""}.`, `Try: LIVES 3`);
         else program.lives = n;
       }
+      else if (head === "UI_THEME") {
+        const v = rest.toLowerCase();
+        if (!UI_THEMES.includes(v)) err(ln, `Unknown UI theme "${rest}"${v ? didYouMean(v, UI_THEMES) : "."}`, `Themes: ${UI_THEMES.join(", ")}`);
+        else program.uiTheme = v;
+      }
+      else if (head === "HUD") {
+        const part = second(words), state = (words[2] || "").toUpperCase();
+        if (!HUD_PARTS.includes(part)) {
+          const s = part && suggest(part, HUD_PARTS);
+          err(ln, part ? `Unknown HUD part "${words[1]}"${s ? `, did you mean "${s}"?` : "."}` : `HUD needs a part and ON or OFF.`, `Try: HUD SCORE OFF  (parts: ${HUD_PARTS.join(", ")})`);
+        }
+        else if (!["ON", "OFF"].includes(state) || words.length > 3) err(ln, `HUD ${part} must be followed by ON or OFF.`, `Try: HUD ${part} OFF`);
+        else program.hud[part.toLowerCase()] = state === "ON";
+      }
       else if (head === "ADD") {
         const kindWord = second(words), kind = ADD_KINDS[kindWord];
         if (!kindWord) err(ln, `ADD needs something to add.`, `Try: ADD CHARACTER hero, ADD NPC elder, ADD ITEM coin or ADD DIALOGUE intro`);
@@ -1009,6 +1155,16 @@ function compile(src) {
             const pr = { name, key: name.toLowerCase(), text: "", duration: null, waitKey: false, line: ln };
             program.prompts[pr.key] = pr;
             block = { kind: "prompt", prompt: pr };
+          }
+        }
+        else if (kind === "SOUND") {
+          const name = claimName(ln, "ADD SOUND", words.slice(2), "chime", soundNames);
+          if (name && SOUNDS.includes(name.toLowerCase()))
+            err(ln, `"${name}" is a built-in sound.`, `Pick another name, e.g. my_${name.toLowerCase()}`);
+          else if (name) {
+            const sd = { name, key: name.toLowerCase(), wave: "square", notes: [], noteText: "", step: 0.06, length: 0.1, slide: 1, volume: 50, line: ln };
+            program.sounds[sd.key] = sd;
+            block = { kind: "sound", sound: sd };
           }
         }
         else defineEntity(ln, kind, `ADD ${kindWord}`, words.slice(2));
@@ -1065,6 +1221,50 @@ function compile(src) {
     if (blockIndent === null) blockIndent = indent;
     else if (indent !== blockIndent)
       warn(ln, `Indentation changed from ${blockIndent} to ${indent} spaces inside the same block.`, `Line every property up the same way.`);
+
+    if (block.kind === "sound") {
+      const sd = block.sound;
+      switch (head) {
+        case "WAVE": {
+          const v = (words[1] || "").toLowerCase();
+          if (!WAVES.includes(v) || words.length > 2) err(ln, `Unknown wave "${words.slice(1).join(" ")}"${v ? didYouMean(v, WAVES) : "."}`, `Waves: ${WAVES.join(", ")}`);
+          else sd.wave = v;
+          break;
+        }
+        case "NOTES": {
+          const toks = rest.split(/[\s,]+/).filter(Boolean);
+          if (!toks.length || toks.length > 16) { err(ln, `NOTES needs 1 to 16 notes.`, `Try: NOTES C5 E5 G5  (note names, or Hz like 880)`); break; }
+          const bad = toks.find(tk => isNaN(noteFreq(tk)));
+          if (bad) { err(ln, `"${bad}" isn't a note.`, `Use note names like C5, F#4, Bb3 or a frequency from 20 to 8000 Hz.`); break; }
+          sd.notes = toks.map(noteFreq); sd.noteText = toks.join(" ");
+          break;
+        }
+        case "STEP":
+        case "LENGTH": {
+          const n = num(rest);
+          if (isNaN(n) || n < 0.01 || n > 2) err(ln, `${head} needs seconds from 0.01 to 2${rest ? `, got "${rest}"` : ""}.`, `Try: ${head} ${head === "STEP" ? "0.06" : "0.1"}`);
+          else sd[head.toLowerCase()] = n;
+          break;
+        }
+        case "SLIDE": {
+          const n = num(rest);
+          if (isNaN(n) || n < 0.1 || n > 8) err(ln, `SLIDE needs a pitch multiplier from 0.1 to 8 (1 = no slide).`, `Try: SLIDE 0.5  (each note glides down an octave)`);
+          else sd.slide = n;
+          break;
+        }
+        case "VOLUME": {
+          const n = num(rest);
+          if (isNaN(n) || n < 0 || n > 100) err(ln, `VOLUME needs a number from 0 to 100.`, `Try: VOLUME 50`);
+          else sd.volume = n;
+          break;
+        }
+        default: {
+          const s = suggest(head, SOUND_PROPS);
+          err(ln, `Unknown sound property "${words[0]}"${s ? `, did you mean "${s}"?` : "."}`, s ? undefined : `Sound properties: ${SOUND_PROPS.join(", ")}`);
+        }
+      }
+      continue;
+    }
 
     if (block.kind === "prompt") {
       const pr = block.prompt;
@@ -1145,11 +1345,11 @@ function compile(src) {
         case "AI": {
           const mode = (words[1] || "").toLowerCase();
           if (!AI_MODES.includes(mode)) {
-            err(ln, `Unknown AI "${words[1] || ""}"${mode ? didYouMean(mode, AI_MODES) : "."}`, `Use "AI chase <target>" or "AI wander".`); break;
+            err(ln, `Unknown AI "${words[1] || ""}"${mode ? didYouMean(mode, AI_MODES) : "."}`, `Use "AI chase <target>", "AI wander" or "AI none".`); break;
           }
           if (mode === "wander" && words.length > 2) warn(ln, `"AI wander" doesn't take a target; "${words.slice(2).join(" ")}" is ignored.`);
           if (mode === "chase" && words.length > 3) err(ln, `"AI chase" takes one target name.`, `Try: AI chase hero`);
-          ent.ai = mode;
+          ent.ai = mode === "none" ? null : mode;
           ent.aiTarget = mode === "chase" && words[2] ? words[2].toLowerCase() : null;
           ent.aiLine = ln;
           if (ent.aiTarget) nameRefs.push({ name: words[2], line: ln, what: "chase target" });
@@ -1159,6 +1359,12 @@ function compile(src) {
           if (rest) warn(ln, `RESPAWN doesn't take a value; "${rest}" is ignored.`);
           ent.respawn = true;
           break;
+        case "SHAPE": {
+          const v = (words[1] || "").toLowerCase();
+          if (!SHAPES.includes(v) || words.length > 2) err(ln, `Unknown shape "${words.slice(1).join(" ")}"${v ? didYouMean(v, SHAPES) : "."}`, `Shapes: ${SHAPES.join(", ")}`);
+          else ent.shape = v;
+          break;
+        }
       }
       continue;
     }
@@ -1172,6 +1378,15 @@ function compile(src) {
     if (!program.prompts[r.name.toLowerCase()])
       err(r.line, `Unknown dialogue "${r.name}"${didYouMean(r.name, promptNames)}`,
         promptNames.length ? `Defined dialogues: ${promptNames.join(", ")}` : `Define it first:\nADD DIALOGUE ${r.name}\n  TEXT "Hello!"`);
+  }
+  const soundList = [...SOUNDS, ...Object.values(program.sounds).map(s => s.name)];
+  for (const r of soundRefs) {
+    const k = r.name.toLowerCase();
+    if (!SOUNDS.includes(k) && !program.sounds[k])
+      err(r.line, `Unknown sound "${r.name}"${didYouMean(r.name, soundList)}`, `Sounds: ${soundList.join(", ")}  (make your own with ADD SOUND)`);
+  }
+  for (const s of Object.values(program.sounds)) {
+    if (!s.notes.length) { warn(s.line, `Sound "${s.name}" has no NOTES, so it plays C5.`, `Try: NOTES C5 E5 G5`); s.notes = [noteFreq("C5")]; s.noteText = "C5"; }
   }
   for (const p of Object.values(program.prompts)) {
     if (!p.text) warn(p.line, `Dialogue "${p.name}" has no TEXT.`, `Indent a line like: TEXT "Hello!"`);
@@ -1283,7 +1498,18 @@ function playSound(name) {
   const now = a.currentTime;
   if (audio.last[name] !== undefined && now - audio.last[name] < 0.35) return;
   audio.last[name] = now;
-  SFX[name](now + 0.01);
+  if (SFX[name]) SFX[name](now + 0.01);
+  else if (game.program && game.program.sounds[name]) playSoundDef(game.program.sounds[name]);
+}
+// ADD SOUND: play each note in turn with the chosen wave, glide (SLIDE) and volume.
+function playSoundDef(sd) {
+  const a = ac(); if (!a || sd.volume <= 0) return;
+  const t = a.currentTime + 0.01, vol = Math.max(0.002, (sd.volume / 100) * 0.3);
+  sd.notes.forEach((f, k) => {
+    const t0 = t + k * sd.step;
+    if (sd.wave === "noise") noise(t0, sd.length, vol * 1.6, Math.min(12000, f * 3));
+    else tone(f, t0, sd.length, { type: sd.wave, vol, to: sd.slide !== 1 ? Math.max(20, f * sd.slide) : null });
+  });
 }
 
 /* ======================================================== 3.6 ENGINE */
@@ -1306,6 +1532,7 @@ const keys = new Set();
 
 function loadProgram(program) {
   game.program = program;
+  applyTheme(program.uiTheme);
   resetWorld();
   setState("START");
 }
@@ -1645,7 +1872,8 @@ const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 const art = document.createElement("canvas");
 art.width = W / PX; art.height = H / PX;
-const actx = art.getContext("2d");
+let actx = art.getContext("2d");   // swapped temporarily to draw asset thumbnails
+let drawingThumb = false;
 
 function rows(X, Y, R, halfAt, color) {   // fill rows y in [-R, R) with half-width halfAt(y)
   actx.fillStyle = color;
@@ -1678,67 +1906,145 @@ function eyes(X, Y, R, fx, fy, angry) {
   }
 }
 
+// Fill every art pixel whose center satisfies inside(nx, ny), with nx, ny in [-1, 1].
+// Pixels are merged into horizontal runs, so even big shapes stay cheap.
+function fillMask(X, Y, R, inside, color) {
+  actx.fillStyle = color;
+  for (let y = -R; y < R; y++) {
+    const ny = (y + 0.5) / R;
+    let run = null;                       // start of the current run (x is negative on the left half)
+    for (let x = -R; x <= R; x++) {
+      const ok = x < R && inside((x + 0.5) / R, ny);
+      if (ok && run === null) run = x;
+      else if (!ok && run !== null) { actx.fillRect(X + run, Y + y, x - run, 1); run = null; }
+    }
+  }
+}
+// Shape masks for SHAPE star / heart / gem / ghost / chest.
+const MASKS = {
+  star: (x, y) => Math.hypot(x, y) <= 0.42 + 0.58 * Math.pow(Math.abs(Math.cos(2.5 * (Math.atan2(y, x) + Math.PI / 2))), 2.2),
+  heart: (x, y) => { const X = x * 1.25, Y = -y * 1.25 + 0.15; return (X * X + Y * Y - 1) ** 3 - X * X * Y ** 3 <= 0; },
+  gem: (x, y) => y < -0.25 ? (y > -0.75 && Math.abs(x) < 0.5 + (y + 0.75) * 0.9) : (y < 0.95 && Math.abs(x) < 0.95 * (0.95 - y) / 1.2),
+  ghost: (x, y, t) => y < 0 ? x * x + y * y <= 1 : (Math.abs(x) <= 1 && y <= 0.76 + 0.16 * Math.sin(x * 9 + t * 7)),
+  chest: (x, y) => Math.abs(x) <= 0.98 && y >= -0.72 && y <= 0.82 && !(Math.abs(x) > 0.86 && y < -0.6),
+};
+
 function drawEntity(i, t) {
   const d = i.def, X = Math.round(i.x / PX), R = Math.max(2, Math.round(i.r / PX));
   let Y = Math.round(i.y / PX);
   const dark = shade(d.color, -0.45), light = shade(d.color, 0.45);
+  const shape = d.shape || DEFAULT_SHAPE[d.type];
+  const living = d.type !== "ITEM";
   // soft shadow
   actx.globalAlpha = 0.28;
   ellipse(X, Y + R - 1, Math.max(2, R - 1), Math.max(1, Math.round(R / 3)), "#000");
   actx.globalAlpha = 1;
 
-  if (d.type === "PLAYER") {
+  if (d.type === "PLAYER" && !drawingThumb) {
     if (game.hurtT > 0 && Math.floor(t * 12) % 2 === 0) return;      // blink while invulnerable
     if (i.moving && game.state === "PLAYING") Y -= Math.abs(Math.sin(t * 14)) > 0.5 ? 1 : 0;
-    roundBox(X, Y, R, dark);
-    roundBox(X, Y, R - 1, d.color);
-    actx.fillStyle = light; actx.fillRect(X - R + 2, Y - R + 2, Math.max(1, R - 2), 1);
-    eyes(X, Y, R, i.fx, i.fy, false);
-  } else if (d.type === "ITEM") {
-    Y += Math.round(Math.sin(t * 3 + i.id) * 1.5);
-    disc(X, Y, R, dark);
-    disc(X, Y, R - 1, d.color);
-    actx.fillStyle = light;
-    actx.fillRect(X - Math.ceil(R / 2), Y - Math.ceil(R / 2), Math.max(1, Math.round(R / 3)), Math.max(1, Math.round(R / 3)));
-    // occasional sparkle
-    if ((Math.floor(t * 2 + i.id * 0.7) % 4) === 0) {
-      actx.fillStyle = "#fff";
-      actx.fillRect(X + R - 1, Y - R, 1, 3); actx.fillRect(X + R - 2, Y - R + 1, 3, 1);
-    }
-  } else if (d.type === "NPC") {
-    // Villager: rounded body with a darker robe; eyes follow the nearest player
-    roundBox(X, Y, R, dark);
-    roundBox(X, Y, R - 1, d.color);
-    const robeTop = Math.round(R * 0.25);
-    actx.fillStyle = shade(d.color, -0.25);
-    actx.fillRect(X - R + 2, Y + robeTop, (R - 2) * 2, Math.max(1, R - 3 - robeTop));
-    actx.fillStyle = light; actx.fillRect(X - R + 2, Y - R + 2, Math.max(1, R - 2), 1);
-    const pl = nearestAlive(game.inst.filter(o => o.def.type === "PLAYER"), i.x, i.y);
-    let fx = 0, fy = 0;
-    if (pl) { const len = Math.hypot(pl.x - i.x, pl.y - i.y) || 1; fx = (pl.x - i.x) / len; fy = (pl.y - i.y) / len; }
-    eyes(X, Y, R, fx, fy, false);
-    if (!i.spoke) {                       // bobbing "!" until they've said something
-      const by = Y - R - 8 + Math.round(Math.sin(t * 4) * 1.5);
-      actx.fillStyle = "#1b2030"; actx.fillRect(X - 2, by - 1, 4, 8);
-      actx.fillStyle = "#ffd166"; actx.fillRect(X - 1, by, 2, 4); actx.fillRect(X - 1, by + 5, 2, 1);
-    }
-  } else {
-    // Slime: squashy dome with a flat base
-    const s = Math.sin(t * 6 + i.id);
-    const RX = Math.max(2, Math.round(R * (1 + 0.1 * s))), RY = Math.max(2, Math.round(R * (1 - 0.1 * s)));
-    const base = Math.round(RY * 0.55);
-    const shape = (rx, ry, col) => {
-      actx.fillStyle = col;
-      for (let y = -ry; y < base; y++) {
-        const h = y < 0 ? Math.round(rx * Math.sqrt(Math.max(0, 1 - ((y + 0.5) / ry) ** 2))) : rx - (y === base - 1 ? 1 : 0);
-        if (h > 0) actx.fillRect(X - h, Y + Math.round(R * 0.25) + y, h * 2, 1);
-      }
-    };
-    shape(RX, RY, dark);
-    shape(RX - 1, RY - 1, d.color);
-    actx.fillStyle = light; actx.fillRect(X - Math.round(RX / 2), Y - Math.round(RY * 0.6), 2, 1);
-    eyes(X, Y + Math.round(R * 0.15), R, i.fx, i.fy, d.ai === "chase");
   }
+  if (d.type === "ITEM") Y += Math.round(Math.sin(t * 3 + i.id) * 1.5);   // items bob
+  // where the eyes look: NPCs watch the nearest player, everyone else faces where they move
+  let fx = i.fx, fy = i.fy;
+  if (d.type === "NPC" && !drawingThumb) {
+    const pl = nearestAlive(game.inst.filter(o => o.def.type === "PLAYER"), i.x, i.y);
+    fx = fy = 0;
+    if (pl) { const len = Math.hypot(pl.x - i.x, pl.y - i.y) || 1; fx = (pl.x - i.x) / len; fy = (pl.y - i.y) / len; }
+  }
+  const sparkle = () => {
+    if ((Math.floor(t * 2 + i.id * 0.7) % 4) !== 0) return;
+    actx.fillStyle = "#fff";
+    actx.fillRect(X + R - 1, Y - R, 1, 3); actx.fillRect(X + R - 2, Y - R + 1, 3, 1);
+  };
+
+  switch (shape) {
+    case "box":
+      roundBox(X, Y, R, dark);
+      roundBox(X, Y, R - 1, d.color);
+      actx.fillStyle = light; actx.fillRect(X - R + 2, Y - R + 2, Math.max(1, R - 2), 1);
+      if (living) eyes(X, Y, R, fx, fy, false);
+      break;
+    case "circle":
+      disc(X, Y, R, dark);
+      disc(X, Y, R - 1, d.color);
+      actx.fillStyle = light;
+      actx.fillRect(X - Math.ceil(R / 2), Y - Math.ceil(R / 2), Math.max(1, Math.round(R / 3)), Math.max(1, Math.round(R / 3)));
+      if (living) eyes(X, Y, R, fx, fy, false); else sparkle();
+      break;
+    case "villager": {
+      // rounded body with a darker robe
+      roundBox(X, Y, R, dark);
+      roundBox(X, Y, R - 1, d.color);
+      const robeTop = Math.round(R * 0.25);
+      actx.fillStyle = shade(d.color, -0.25);
+      actx.fillRect(X - R + 2, Y + robeTop, (R - 2) * 2, Math.max(1, R - 3 - robeTop));
+      actx.fillStyle = light; actx.fillRect(X - R + 2, Y - R + 2, Math.max(1, R - 2), 1);
+      if (living) eyes(X, Y, R, fx, fy, false);
+      break;
+    }
+    case "slime": {
+      // squashy dome with a flat base
+      const s = Math.sin(t * 6 + i.id);
+      const RX = Math.max(2, Math.round(R * (1 + 0.1 * s))), RY = Math.max(2, Math.round(R * (1 - 0.1 * s)));
+      const base = Math.round(RY * 0.55);
+      const body = (rx, ry, col) => {
+        actx.fillStyle = col;
+        for (let y = -ry; y < base; y++) {
+          const h = y < 0 ? Math.round(rx * Math.sqrt(Math.max(0, 1 - ((y + 0.5) / ry) ** 2))) : rx - (y === base - 1 ? 1 : 0);
+          if (h > 0) actx.fillRect(X - h, Y + Math.round(R * 0.25) + y, h * 2, 1);
+        }
+      };
+      body(RX, RY, dark);
+      body(RX - 1, RY - 1, d.color);
+      actx.fillStyle = light; actx.fillRect(X - Math.round(RX / 2), Y - Math.round(RY * 0.6), 2, 1);
+      if (living) eyes(X, Y + Math.round(R * 0.15), R, fx, fy, d.ai === "chase");
+      break;
+    }
+    default: {
+      // mask shapes: dark outline, then the fill one pixel smaller
+      const mask = shape === "ghost" ? (x, y) => MASKS.ghost(x, y, t) : MASKS[shape];
+      fillMask(X, Y, R, mask, dark);
+      fillMask(X, Y, R - 1, mask, d.color);
+      actx.fillStyle = light;
+      if (shape === "chest") {
+        actx.fillStyle = dark; actx.fillRect(X - R + 1, Y - Math.round(R * 0.15), (R - 1) * 2, 1);          // lid seam
+        actx.fillStyle = "#fff3b0"; actx.fillRect(X - 1, Y - Math.round(R * 0.15) - 1, 2, 3);               // lock
+        actx.fillStyle = light; actx.fillRect(X - R + 2, Y - Math.round(R * 0.6), Math.max(1, R - 2), 1);
+      } else if (shape === "gem") {
+        actx.fillRect(X - Math.round(R * 0.45), Y - Math.round(R * 0.55), Math.max(1, Math.round(R * 0.3)), 1);
+        actx.fillStyle = dark; actx.fillRect(X - Math.round(R * 0.9), Y - Math.round(R * 0.25), Math.round(R * 1.8), 1);
+      } else {
+        actx.fillRect(X - Math.round(R * 0.45), Y - Math.round(R * 0.45), Math.max(1, Math.round(R / 4)), Math.max(1, Math.round(R / 4)));
+      }
+      if (living) eyes(X, Y, R, fx, fy, d.ai === "chase" && shape === "ghost");
+      else if (shape !== "chest") sparkle();
+    }
+  }
+  if (d.type === "NPC" && !i.spoke && !drawingThumb) {   // bobbing "!" until they've said something
+    const by = Y - R - 8 + Math.round(Math.sin(t * 4) * 1.5);
+    actx.fillStyle = "#1b2030"; actx.fillRect(X - 2, by - 1, 4, 8);
+    actx.fillStyle = "#ffd166"; actx.fillRect(X - 1, by, 2, 4); actx.fillRect(X - 1, by + 5, 2, 1);
+  }
+}
+
+// Asset-panel thumbnail: draw one entity definition into a small canvas using the game's own art code.
+const thumbArt = document.createElement("canvas");
+thumbArt.width = thumbArt.height = 32;
+function drawThumb(canvas, def, t) {
+  const size = Math.max(26, Math.min(def.size * 1.6, 50));
+  const fake = { def: { ...def, size }, r: size / 2, x: 32, y: 30, id: (def.key || "").length, fx: 0, fy: 0.5, moving: false, spoke: true, alive: true };
+  const saved = actx;
+  actx = thumbArt.getContext("2d");
+  drawingThumb = true;
+  try {
+    actx.clearRect(0, 0, 32, 32);
+    drawEntity(fake, t);
+  } finally { actx = saved; drawingThumb = false; }
+  const c = canvas.getContext("2d");
+  c.imageSmoothingEnabled = false;
+  c.clearRect(0, 0, canvas.width, canvas.height);
+  c.drawImage(thumbArt, 0, 0, canvas.width, canvas.height);
 }
 
 function render() {
@@ -1787,6 +2093,15 @@ function render() {
 }
 
 /* Speech bubbles: word-wrapped text in a rounded box with a tail pointing at the speaker. */
+// UI_THEME colors used on the canvas (the matching HTML styles live in the CSS).
+const UI_THEME_STYLES = {
+  classic:   { label: "Classic",   font: "bold 13px Consolas, 'Courier New', monospace", bubbleBg: "#fbfcff", bubbleInk: "#1b2030", bubbleLine: "#1b2030", boxBg: "rgba(9,12,22,.93)", boxInk: "#ffffff", boxLine: "#e8edf7", stage: "#1e293b" },
+  parchment: { label: "Parchment", font: "bold 13px Georgia, 'Times New Roman', serif",  bubbleBg: "#f6e7c4", bubbleInk: "#4a3520", bubbleLine: "#7a4f24", boxBg: "#f3e3bf", boxInk: "#4a3520", boxLine: "#8a5a2b", stage: "#3b2a18" },
+  neon:      { label: "Neon",      font: "bold 13px Consolas, 'Courier New', monospace", bubbleBg: "#0b0f1f", bubbleInk: "#7df9ff", bubbleLine: "#ff2fd6", boxBg: "rgba(6,8,20,.92)", boxInk: "#7df9ff", boxLine: "#ff2fd6", stage: "#090418" },
+  candy:     { label: "Candy",     font: "bold 13px 'Trebuchet MS', 'Segoe UI', sans-serif", bubbleBg: "#ffe3f1", bubbleInk: "#7a2e5b", bubbleLine: "#ff6fb5", boxBg: "#ffe3f1", boxInk: "#7a2e5b", boxLine: "#ff6fb5", stage: "#3a1630" },
+};
+const uiTheme = () => UI_THEME_STYLES[stage.dataset.ui] || UI_THEME_STYLES.classic;
+function applyTheme(name) { stage.dataset.ui = UI_THEME_STYLES[name] ? name : "classic"; }
 const BUBBLE_FONT = "bold 13px Consolas, 'Courier New', monospace";
 function wrapLines(text, maxW) {
   const lines = [];
@@ -1818,8 +2133,9 @@ function bubblePath(x, y, w, h, rad, tx, tipY, tailUp) {
 const BUBBLE_LH = 16, BUBBLE_PAD_X = 9, BUBBLE_PAD_Y = 6;
 // Where a bubble wants to sit: centered over the speaker's head, kept on screen.
 function bubbleLayout(b) {
-  ctx.font = BUBBLE_FONT;
-  if (!b.lines) b.lines = wrapLines(b.text, 180);
+  const font = uiTheme().font;
+  ctx.font = font;
+  if (!b.lines || b.font !== font) { b.lines = wrapLines(b.text, 180); b.font = font; }
   const gap = 10;
   const w = Math.min(W - 8, Math.max(44, Math.ceil(Math.max(...b.lines.map(l => ctx.measureText(l).width))) + BUBBLE_PAD_X * 2));
   const h = b.lines.length * BUBBLE_LH + BUBBLE_PAD_Y * 2;
@@ -1848,7 +2164,8 @@ function drawBubbles() {
 }
 function drawBubble(b, { x, y, w, h, tailUp }) {
   ctx.save();
-  ctx.font = BUBBLE_FONT;
+  const th = uiTheme();
+  ctx.font = th.font;
   const lh = BUBBLE_LH, padY = BUBBLE_PAD_Y;
   const tx = Math.round(Math.max(x + 14, Math.min(x + w - 14, b.x)));
   const tipY = Math.round(tailUp ? b.y + b.r + 2 : b.y - b.r - 2);
@@ -1859,9 +2176,9 @@ function drawBubble(b, { x, y, w, h, tailUp }) {
   ctx.fillStyle = "rgba(0,0,0,.35)";
   bubblePath(x + 3, y + 3, w, h, 8, tx + 3, tipY + 3, tailUp); ctx.fill();
   bubblePath(x, y, w, h, 8, tx, tipY, tailUp);
-  ctx.fillStyle = "#fbfcff"; ctx.fill();
-  ctx.lineWidth = 2; ctx.strokeStyle = "#1b2030"; ctx.stroke();
-  ctx.fillStyle = "#1b2030"; ctx.textAlign = "center"; ctx.textBaseline = "top";
+  ctx.fillStyle = th.bubbleBg; ctx.fill();
+  ctx.lineWidth = 2; ctx.strokeStyle = th.bubbleLine; ctx.stroke();
+  ctx.fillStyle = th.bubbleInk; ctx.textAlign = "center"; ctx.textBaseline = "top";
   b.lines.forEach((l, k) => ctx.fillText(l, x + w / 2, y + padY + k * lh + 1));
   ctx.restore();
 }
@@ -1871,6 +2188,13 @@ const hud = { score: document.getElementById("hudScore"), lives: document.getEle
 const hudCache = {};
 function setText(el, key, v) { if (hudCache[key] !== v) { hudCache[key] = v; el.textContent = v; } }
 function updateHUD() {
+  const show = game.program ? game.program.hud : { score: true, lives: true, title: true };
+  if (hudCache.vis !== `${show.score}${show.lives}${show.title}`) {
+    hudCache.vis = `${show.score}${show.lives}${show.title}`;
+    hud.score.style.visibility = show.score ? "" : "hidden";
+    hud.lives.style.visibility = show.lives ? "" : "hidden";
+    hud.title.style.visibility = show.title ? "" : "hidden";
+  }
   setText(hud.score, "s", "SCORE " + game.score);
   setText(hud.lives, "l", game.lives <= 8 ? "♥".repeat(game.lives) + "♡".repeat(Math.max(0, Math.min(8, (game.program ? game.program.lives : 3)) - game.lives)) : "♥ × " + game.lives);
   setText(hud.title, "t", game.program && game.state === "PLAYING" ? game.program.title : "");
@@ -1927,10 +2251,10 @@ const buffers = {};          // per-demo edited text, so switching demos keeps y
 
 const KW_ENT = new Set([...ENTITY_TYPES, ...Object.keys(ADD_KINDS)]);
 const KW_RULE = new Set(["ON", "TOUCH", "TOUCHES", "WHEN", "REACHES", "SAYS", "TO"]);
-const KW_DIR = new Set(["TITLE", "BACKGROUND", "LIVES", "ADD"]);
-const KW_PROP = new Set([...Object.keys(PROPS), ...PROMPT_PROPS]), KW_ACT = new Set(ACTIONS);
+const KW_DIR = new Set(["TITLE", "BACKGROUND", "LIVES", "ADD", "UI_THEME", "HUD"]);
+const KW_PROP = new Set([...Object.keys(PROPS), ...PROMPT_PROPS, ...SOUND_PROPS]), KW_ACT = new Set(ACTIONS);
 const KW_AMOUNT = new Set(["SCORE", "POINT", "POINTS", "LIFE", "LIVES"]);
-const KW_VAL = new Set([...SOUNDS, ...AI_MODES, ...CONTROL_SCHEMES].map(s => s.toUpperCase()));
+const KW_VAL = new Set([...SOUNDS, ...AI_MODES, ...CONTROL_SCHEMES, ...SHAPES, ...WAVES, ...UI_THEMES, "off"].map(s => s.toUpperCase()));
 
 // Syntax highlighter for one line -> HTML.
 function highlightLine(line) {
@@ -2027,12 +2351,14 @@ function liveCompile() {
   logMessages(lastResult);
   renderEditor();
   updateDirty();
+  refreshAssets(true);
 }
 function updateDirty() {
   dirtyNote.textContent = runningSource !== null && ta.value !== runningSource ? "● Script changed — press ▶ Run Game to apply" : "";
 }
 ta.addEventListener("input", () => {
   buffers[demoSelect.value] = ta.value;
+  assetUI.history.length = 0;                       // typed edits make old panel snapshots stale
   renderEditor();                                   // instant highlighting
   clearTimeout(compileTimer);
   compileTimer = setTimeout(liveCompile, 220);      // debounced compile
@@ -2123,6 +2449,10 @@ function loadDemo(id, pristine) {
   renderEditor();
   if (!lastResult.errors.length) { loadProgram(lastResult.program); runningSource = ta.value; }
   updateDirty();
+  assetUI.history.length = 0;
+  assetUI.sel = { objects: null, sounds: null, ui: null };
+  assetUndoBtn.hidden = true;
+  refreshAssets(true);
 }
 document.getElementById("runBtn").addEventListener("click", runGame);
 document.getElementById("resetBtn").addEventListener("click", () => loadDemo(demoSelect.value, true));
@@ -2162,7 +2492,677 @@ stage.addEventListener("mousedown", () => {
   else if (isModal()) advancePrompt();
 });
 
-/* ============================================ 3.9 BOOT + SELF-TEST */
+/* ===================================================== 3.9 ASSET PANEL */
+/*
+  A visual editor over the script. Every change is written back into the
+  script as ordinary DSL lines, so the script stays the one source of truth
+  (and stays copy-pasteable), then it recompiles and hot-applies to the game.
+*/
+const assetsEl = document.getElementById("assets");
+const assetBody = document.getElementById("assetBody");
+const editorPane = document.getElementById("editorPane");
+const assetUndoBtn = document.getElementById("assetUndo");
+const assetUI = { tab: "objects", sel: { objects: null, sounds: null, ui: null }, history: [], lastPush: 0, lastField: "", placing: null };
+let lastCaret = 0;   // where the script cursor was, for "Insert into rule at cursor"
+["keyup", "click", "select", "input"].forEach(ev => ta.addEventListener(ev, () => { lastCaret = ta.selectionStart; }));
+const escAttr = s => escapeHTML(String(s)).replace(/"/g, "&quot;");
+
+const OBJECT_TEMPLATES = [
+  { label: "Hero",     type: "PLAYER", base: "hero",     props: { COLOR: "#4cc9f0", SIZE: 24, SPEED: 4 } },
+  { label: "Coin",     type: "ITEM",   base: "coin",     props: { COLOR: "gold", SIZE: 14, COUNT: 5, RESPAWN: true } },
+  { label: "Gem",      type: "ITEM",   base: "gem",      props: { COLOR: "#3ddc97", SIZE: 16, SHAPE: "gem", COUNT: 3 } },
+  { label: "Star",     type: "ITEM",   base: "star",     props: { COLOR: "#fee440", SIZE: 16, SHAPE: "star", RESPAWN: true } },
+  { label: "Heart",    type: "ITEM",   base: "heart",    props: { COLOR: "hotpink", SIZE: 14, SHAPE: "heart" } },
+  { label: "Chest",    type: "ITEM",   base: "chest",    props: { COLOR: "#ffb703", SIZE: 18, SHAPE: "chest", COUNT: 2 } },
+  { label: "Slime",    type: "ENEMY",  base: "slime",    props: { COLOR: "limegreen", SIZE: 26, SPEED: 1.5, AI: "wander" } },
+  { label: "Ghost",    type: "ENEMY",  base: "ghost",    props: { COLOR: "#caf0f8", SIZE: 24, SPEED: 1.2, SHAPE: "ghost", AI: "chase" } },
+  { label: "Villager", type: "NPC",    base: "villager", props: { COLOR: "#e9c46a", SIZE: 26 } },
+];
+const SOUND_PRESETS = {
+  chime:     { label: "✨ Chime",        wave: "square",   notes: "B5 E6 G#6 B6",      step: 0.045, length: 0.09, slide: 1,    volume: 35 },
+  coin:      { label: "🪙 Coin",         wave: "square",   notes: "B5 E6",             step: 0.07,  length: 0.12, slide: 1,    volume: 40 },
+  jump:      { label: "🦘 Jump",         wave: "square",   notes: "C5",                step: 0.1,   length: 0.18, slide: 2,    volume: 40 },
+  laser:     { label: "🔫 Laser",        wave: "sawtooth", notes: "A6",                step: 0.1,   length: 0.2,  slide: 0.15, volume: 35 },
+  crunch:    { label: "💥 Crunch",       wave: "noise",    notes: "C5",                step: 0.1,   length: 0.2,  slide: 1,    volume: 70 },
+  explosion: { label: "🧨 Explosion",    wave: "noise",    notes: "C4 G3",             step: 0.12,  length: 0.4,  slide: 1,    volume: 80 },
+  powerup:   { label: "⚡ Power-up",     wave: "triangle", notes: "C5 E5 G5 C6 E6 G6", step: 0.05,  length: 0.08, slide: 1,    volume: 60 },
+  fanfare:   { label: "🎺 Fanfare",      wave: "square",   notes: "C5 E5 G5 C6",       step: 0.11,  length: 0.14, slide: 1,    volume: 40 },
+  blip:      { label: "💬 Blip",         wave: "square",   notes: "A5",                step: 0.05,  length: 0.04, slide: 1,    volume: 30 },
+  alarm:     { label: "🚨 Alarm",        wave: "square",   notes: "A5 E5 A5 E5",       step: 0.15,  length: 0.14, slide: 1,    volume: 35 },
+  sad:       { label: "😢 Sad trombone", wave: "sawtooth", notes: "G4 F#4 F4 E4",      step: 0.3,   length: 0.32, slide: 0.94, volume: 35 },
+  bassdrop:  { label: "🔉 Bass drop",    wave: "sine",     notes: "C3",                step: 0.1,   length: 0.6,  slide: 0.25, volume: 85 },
+};
+const BUILTIN_SOUND_INFO = { pickup: "High arpeggiated chime", hit: "Low square crunch + noise", win: "Ascending fanfare", lose: "Descending buzzer" };
+const BUILTIN_TO_PRESET = { pickup: "chime", hit: "crunch", win: "fanfare", lose: "sad" };
+// Same reserved words the compiler rejects as names.
+const NAME_KEYWORDS = new Set([...TOP_LEVEL, ...ACTIONS, ...Object.keys(PROPS), ...Object.keys(ADD_KINDS), ...PROMPT_PROPS, "TOUCH", "SAYS", "TO", "LIFE"]);
+
+/* ---- script editing helpers (lines in, lines out; line numbers are 1-based) ---- */
+const srcLines = () => ta.value.split("\n");
+function topWords(line) {                     // words of an unindented code line, else null
+  const c = stripComment(line);
+  return c.trim() && measureIndent(c) === 0 ? c.trim().split(/\s+/) : null;
+}
+// The block whose header is on line `ln`: array indices [start, end) covering its indented lines.
+function blockRange(lines, ln) {
+  const start = ln - 1;
+  let end = start + 1;
+  for (let k = start + 1; k < lines.length; k++) {
+    const code = stripComment(lines[k]);
+    if (!code.trim()) continue;
+    if (measureIndent(code) === 0) break;
+    end = k + 1;
+  }
+  return { start, end };
+}
+// Set (or with null, remove) one property line inside a block. `true` writes a bare flag like RESPAWN.
+function setBlockProp(lines, ln, prop, value) {
+  const { start, end } = blockRange(lines, ln);
+  let found = -1, indent = "  ";
+  for (let k = start + 1; k < end; k++) {
+    const code = stripComment(lines[k]);
+    if (!code.trim()) continue;
+    if (found < 0 && indent === "  ") indent = " ".repeat(measureIndent(code));
+    if (code.trim().split(/\s+/)[0].toUpperCase() === prop) { found = k; break; }
+  }
+  if (value === null || value === false) { if (found >= 0) lines.splice(found, 1); return lines; }
+  const text = value === true ? prop : `${prop} ${value}`;
+  if (found >= 0) {
+    const comment = lines[found].slice(stripComment(lines[found]).length).trim();
+    lines[found] = lines[found].match(/^\s*/)[0] + text + (comment ? "  " + comment : "");
+  } else lines.splice(end, 0, indent + text);
+  return lines;
+}
+// Replace (or with null, remove) the first top-level line matching `match`; otherwise add it near the top.
+function setTopLine(lines, match, text) {
+  const k = lines.findIndex(l => { const w = topWords(l); return w && match(w); });
+  if (k >= 0) { if (text === null) lines.splice(k, 1); else lines[k] = text; return lines; }
+  if (text === null) return lines;
+  let at = 0;
+  lines.forEach((l, i) => { const w = topWords(l); if (w && ["TITLE", "BACKGROUND", "LIVES", "UI_THEME", "HUD"].includes(w[0].toUpperCase())) at = i + 1; });
+  lines.splice(at, 0, text);
+  return lines;
+}
+// New declarations go above the first rule (ON / WHEN / top-level dialogue), or at the end.
+function insertBlock(lines, blockLines) {
+  let at = lines.findIndex(l => {
+    const w = topWords(l); if (!w) return false;
+    const h = w[0].toUpperCase();
+    return h === "ON" || h === "WHEN" || h === "SAY" || h === "SHOW" || /^SAYS?$/i.test(w[1] || "");
+  });
+  if (at < 0) {
+    while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
+    lines.push("", ...blockLines, "");
+    return lines;
+  }
+  while (at > 0 && /^\s*\/\//.test(lines[at - 1])) at--;          // keep a comment that introduces the rules
+  const chunk = [...blockLines, ""];
+  if (at > 0 && lines[at - 1].trim()) chunk.unshift("");
+  lines.splice(at, 0, ...chunk);
+  return lines;
+}
+function removeBlock(lines, ln) {
+  const { start, end } = blockRange(lines, ln);
+  let e = end;
+  if (lines[e] !== undefined && !lines[e].trim() && (start === 0 || !lines[start - 1].trim())) e++;
+  lines.splice(start, e - start);
+  return lines;
+}
+// Rename a name everywhere it's used, never inside "quoted text". Sounds only live on SOUND lines.
+const RENAME_SKIP = new Set(["SHAPE", "COLOR", "CONTROLS", "TEXT", "TITLE", "BACKGROUND", "UI_THEME", "HUD", "WAVE", "NOTES"]);
+function renameInSource(lines, oldName, newName, soundOnly) {
+  const re = new RegExp(`(^|[^A-Za-z0-9_])${oldName.replace(/[^A-Za-z0-9_]/g, "")}(?![A-Za-z0-9_])`, "gi");
+  return lines.map(line => {
+    const code = stripComment(line), comment = line.slice(code.length);
+    const w = code.trim().split(/\s+/), head = (w[0] || "").toUpperCase();
+    const soundLine = head === "SOUND" || (head === "ADD" && (w[1] || "").toUpperCase() === "SOUND");
+    if (soundOnly !== soundLine || (!soundOnly && RENAME_SKIP.has(head))) return line;
+    const parts = code.split('"');
+    for (let k = 0; k < parts.length; k += 2) parts[k] = parts[k].replace(re, (m, pre) => pre + newName);
+    return parts.join('"') + comment;
+  });
+}
+function uniqueName(base, taken) {
+  if (!taken(base)) return base;
+  for (let n = 2; ; n++) if (!taken(base + n)) return base + n;
+}
+function templateBlock(tp, name) {
+  const header = tp.type === "PLAYER" ? "ADD CHARACTER" : "ADD " + tp.type;
+  return [`${header} ${name}`, ...Object.entries(tp.props).map(([k, v]) => "  " + (v === true ? k : `${k} ${v}`))];
+}
+function soundBlock(name, pre) {
+  return [`ADD SOUND ${name}`, `  WAVE ${pre.wave}`, `  NOTES ${pre.notes}`, `  STEP ${pre.step}`, `  LENGTH ${pre.length}`,
+    ...(pre.slide !== 1 ? [`  SLIDE ${pre.slide}`] : []), `  VOLUME ${pre.volume}`];
+}
+function snippetFor(ln) {
+  const lines = srcLines(), { start, end } = blockRange(lines, ln);
+  return lines.slice(start, end).map(highlightLine).join("\n");
+}
+const toHex = c => "#" + toRGB(c).map(v => Math.round(v).toString(16).padStart(2, "0")).join("");
+
+/* ---- applying panel edits ---- */
+function editLines(fn, opts) { const lines = srcLines(); const r = fn(lines); commit(Array.isArray(r) ? r : lines, opts); }
+function commit(lines, { full = false, note = "", field = "" } = {}) {
+  const text = lines.join("\n");
+  if (text === ta.value) return;
+  // Rapid edits of one control (dragging a slider) collapse into a single undo step.
+  const now = Date.now();
+  if (!(field && field === assetUI.lastField && now - assetUI.lastPush < 800)) assetUI.history.push(ta.value);
+  if (assetUI.history.length > 60) assetUI.history.shift();
+  assetUI.lastPush = now; assetUI.lastField = field;
+  setSource(text, note);
+  refreshAssets(full);
+}
+function setSource(text, note) {
+  const st = ta.scrollTop;
+  ta.value = text;
+  buffers[demoSelect.value] = text;
+  lastResult = compile(text);
+  logMessages(lastResult, note ? { type: "info", text: note } : null);
+  renderEditor();
+  ta.scrollTop = st; syncScroll();
+  liveApply();
+  updateDirty();
+  assetUndoBtn.hidden = !assetUI.history.length || assetsEl.hidden;
+}
+// Push a clean compile into the game without restarting it, when that's possible.
+function liveApply() {
+  if (lastResult.errors.length || !game.program) return;
+  const p = lastResult.program;
+  const sig = pr => pr.entities.map(e => `${e.key}:${e.count}:${e.start ? e.start.x + "," + e.start.y : ""}`).join("|");
+  const structural = sig(p) !== sig(game.program);          // objects added/removed, COUNT or START changed
+  if (structural && game.state !== "PLAYING") { loadProgram(p); runningSource = ta.value; return; }
+  hotReload(p);
+  if (!structural) runningSource = ta.value;                // otherwise "press Run" stays up
+}
+function hotReload(p) {
+  const old = game.program;
+  game.program = p;
+  applyTheme(p.uiTheme);
+  for (const i of game.inst) {
+    const nd = p.byName[i.def.key];
+    if (nd) { i.def = nd; i.r = nd.size / 2; clampInst(i); }
+  }
+  for (const e of p.entities) if (!game.byKey[e.key]) game.byKey[e.key] = [];
+  game.goalsDone = new Set(p.goals.filter((g, k) => old && old.goals[k] && game.goalsDone.has(old.goals[k])));
+  updateBanner();
+}
+assetUndoBtn.addEventListener("click", () => {
+  const prev = assetUI.history.pop();
+  if (prev === undefined) return;
+  assetUI.lastField = "";
+  setSource(prev, "Undid the last Assets change.");
+  refreshAssets(true);
+});
+
+/* ---- panel switching ---- */
+function showPanel(which) {
+  document.querySelectorAll(".ptab").forEach(b => b.classList.toggle("active", b.dataset.ptab === which));
+  const assets = which === "assets";
+  assetsEl.hidden = !assets;
+  editorPane.hidden = assets;
+  document.getElementById("scriptKeys").hidden = assets;
+  assetUndoBtn.hidden = !assets || !assetUI.history.length;
+  if (assets) refreshAssets(true); else renderEditor();
+}
+document.querySelectorAll(".ptab").forEach(b => b.addEventListener("click", () => showPanel(b.dataset.ptab)));
+document.querySelectorAll(".atab").forEach(b => b.addEventListener("click", () => {
+  assetUI.tab = b.dataset.atab;
+  document.querySelectorAll(".atab").forEach(x => x.classList.toggle("active", x === b));
+  refreshAssets(true);
+}));
+
+const curEnt = () => lastResult.program.byName[assetUI.sel.objects];
+const curSound = () => (assetUI.sel.sounds && !assetUI.sel.sounds.startsWith("builtin:") ? lastResult.program.sounds[assetUI.sel.sounds] : null);
+const curPrompt = () => lastResult.program.prompts[assetUI.sel.ui];
+const rangeRow = (f, min, max, step, val, unit = "") =>
+  `<div class="row"><input type="range" data-f="${f}" min="${min}" max="${max}" step="${step}" value="${val}"><output>${val}${unit}</output></div>`;
+const nameRow = (f, name) =>
+  `<label>Name</label><div class="row"><input type="text" data-f="${f}" value="${escAttr(name)}" spellcheck="false"><span class="field-err" id="nameErr"></span></div>`;
+
+/* ---- Objects ---- */
+function objectsList(p) {
+  if (!p.entities.length) return `<div class="empty">No objects yet. Add one from the library above.</div>`;
+  return `<div class="cards">${p.entities.map(e => `
+    <button class="card${assetUI.sel.objects === e.key ? " selected" : ""}" data-act="select" data-key="${e.key}">
+      <canvas width="64" height="64" data-thumb="ent:${e.key}"></canvas>
+      <span>${escapeHTML(e.name)}</span>
+      <span class="badge">${e.type}${e.count > 1 ? " ×" + e.count : ""}</span>
+    </button>`).join("")}</div>`;
+}
+function objectInspector(p) {
+  const e = p.byName[assetUI.sel.objects];
+  if (!e) return "";
+  const opt = (v, cur, label = v) => `<option value="${v}" ${cur === v ? "selected" : ""}>${label}</option>`;
+  const targets = p.entities.filter(o => o !== e).map(o => opt(o.key, e.aiTarget, escapeHTML(o.name))).join("");
+  return `<div class="inspector">
+    <div class="head"><canvas width="80" height="80" data-thumb="ent:${e.key}"></canvas><span>${escapeHTML(e.name)}</span><span class="badge">${e.type} · line ${e.line}</span></div>
+    ${nameRow("name", e.name)}
+    <label>Type</label><select data-f="type">${ENTITY_TYPES.map(t => opt(t, e.type)).join("")}</select>
+    <label>Shape</label><select data-f="shape">${opt("", e.shape || "", `auto (${DEFAULT_SHAPE[e.type]})`)}${SHAPES.map(s => opt(s, e.shape)).join("")}</select>
+    <label>Color</label><div class="row"><input type="color" data-f="colorpick" value="${toHex(e.color)}"><input type="text" data-f="color" value="${escAttr(e.color)}" spellcheck="false"></div>
+    <label>Size</label>${rangeRow("size", 4, 120, 1, e.size)}
+    <label>Speed</label>${rangeRow("speed", 0, 10, 0.1, e.speed)}
+    ${e.type !== "PLAYER" ? `<label>Count</label><input type="number" data-f="count" min="1" max="100" value="${e.count}">` : ""}
+    <label>Start</label><div class="row">
+      <input type="number" data-f="startx" min="0" max="600" placeholder="x" value="${e.start ? e.start.x : ""}">
+      <input type="number" data-f="starty" min="0" max="400" placeholder="y" value="${e.start ? e.start.y : ""}">
+      <button class="btn-s" data-act="pick">📍 Pick on game</button>
+      ${e.start ? `<button class="btn-s" data-act="clearstart" title="Use a random start">✕</button>` : `<span class="hint-s">random</span>`}
+    </div>
+    ${e.type === "PLAYER" ? `<label>Controls</label><select data-f="controls">${["both", "arrows", "wasd"].map(c => opt(c, e.controls)).join("")}</select>` : ""}
+    ${PROPS.AI.includes(e.type) ? `<label>AI</label><div class="row"><select data-f="ai">${["none", "wander", "chase"].map(a => opt(a, e.ai || "none")).join("")}</select>
+      ${e.ai === "chase" ? `<span class="hint-s">target</span><select data-f="aitarget">${targets}</select>` : ""}</div>` : ""}
+    <label>Respawn</label><label class="row hint-s"><input type="checkbox" data-f="respawn" ${e.respawn ? "checked" : ""}> jump to a new spot when touched${e.type === "ITEM" ? " (otherwise it vanishes)" : ""}</label>
+    <div class="full btns"><button class="btn-s" data-act="dupe">⧉ Duplicate</button><button class="btn-s btn-danger" data-act="delete">🗑 Delete</button></div>
+    <pre class="snippet full" id="aSnippet">${snippetFor(e.line)}</pre>
+  </div>`;
+}
+function objectsHTML(p) {
+  if (assetUI.sel.objects && !p.byName[assetUI.sel.objects]) assetUI.sel.objects = null;
+  if (!assetUI.sel.objects && p.entities[0]) assetUI.sel.objects = p.entities[0].key;
+  return `<div class="asset-section">
+    <h3>Library <span class="hint-s" style="text-transform:none;letter-spacing:0">click to add to your game</span></h3>
+    <div class="chips">${OBJECT_TEMPLATES.map((tp, k) => `<button class="chip" data-act="template" data-k="${k}"><canvas width="52" height="52" data-thumb="tpl:${k}"></canvas>${tp.label}</button>`).join("")}</div>
+    <h3>In this game <span class="count">${p.entities.length}</span></h3>
+    <div id="aList">${objectsList(p)}</div>
+    <div id="aInspector">${objectInspector(p)}</div>
+  </div>`;
+}
+const tplDefs = OBJECT_TEMPLATES.map(tp => ({ type: tp.type, name: tp.label, key: tp.base, color: tp.props.COLOR, size: tp.props.SIZE,
+  shape: tp.props.SHAPE || null, ai: tp.props.AI || DEFAULTS[tp.type].ai, speed: 0 }));
+function drawAllThumbs() {
+  const p = lastResult && lastResult.program;
+  if (!p) return;
+  for (const c of assetBody.querySelectorAll("canvas[data-thumb]")) {
+    const [kind, k] = c.dataset.thumb.split(":");
+    const def = kind === "ent" ? p.byName[k] : tplDefs[+k];
+    if (def) drawThumb(c, def, game.time);
+  }
+}
+setInterval(() => { if (!assetsEl.hidden && assetUI.tab === "objects") drawAllThumbs(); }, 120);   // gently animated
+
+/* ---- Sounds ---- */
+function soundRow(key, name, desc, wave) {
+  return `<div class="list-row${assetUI.sel.sounds === key ? " selected" : ""}" data-act="select" data-key="${key}" role="button" tabindex="0">
+    <button class="play" data-act="play" data-key="${key}" title="Play">▶</button>
+    <span class="name">${escapeHTML(name)}</span><span class="desc">${escapeHTML(desc)}</span>
+    ${wave ? `<canvas width="180" height="48" data-wave="${key}"></canvas>` : ""}
+  </div>`;
+}
+function soundList(p) {
+  const customs = Object.values(p.sounds);
+  if (!customs.length) return `<div class="empty">No custom sounds yet. Pick a preset below to make one.</div>`;
+  return `<div class="list">${customs.map(s => soundRow(s.key, s.name, `${s.wave} · ${s.noteText}`, true)).join("")}</div>`;
+}
+function soundInspector(p) {
+  const sel = assetUI.sel.sounds;
+  if (sel && sel.startsWith("builtin:")) {
+    const n = sel.slice(8);
+    return `<div class="inspector">
+      <div class="head">🔊 <span>${n}</span><span class="badge">BUILT-IN</span></div>
+      <div class="full hint-s">${BUILTIN_SOUND_INFO[n]}. Play it from a rule with <code>SOUND ${n}</code>.</div>
+      <div class="full btns">
+        <button class="btn-s" data-act="play" data-key="${sel}">▶ Play</button>
+        <button class="btn-s btn-accent" data-act="insert" data-text="SOUND ${n}">↳ Insert into rule at cursor</button>
+        <button class="btn-s" data-act="preset" data-k="${BUILTIN_TO_PRESET[n]}">✎ Make an editable copy</button>
+      </div></div>`;
+  }
+  const sd = p.sounds[sel];
+  if (!sd) return "";
+  return `<div class="inspector">
+    <div class="head">🎛 <span>${escapeHTML(sd.name)}</span><span class="badge">line ${sd.line}</span></div>
+    ${nameRow("sname", sd.name)}
+    <label>Wave</label><select data-f="wave">${WAVES.map(w => `<option ${sd.wave === w ? "selected" : ""}>${w}</option>`).join("")}</select>
+    <label>Notes</label><div><input type="text" data-f="notes" value="${escAttr(sd.noteText)}" spellcheck="false"><div class="hint-s" id="notesHint">Note names (C5 E5 G5, F#4, Bb3) or Hz. Up to 16.</div></div>
+    <label>Step</label>${rangeRow("step", 0.01, 0.5, 0.005, sd.step)}
+    <label>Length</label>${rangeRow("length", 0.02, 1, 0.01, sd.length)}
+    <label>Slide</label>${rangeRow("slide", 0.1, 4, 0.01, sd.slide)}
+    <label>Volume</label>${rangeRow("volume", 0, 100, 1, sd.volume)}
+    <div class="full btns">
+      <button class="btn-s" data-act="play" data-key="${sd.key}">▶ Play</button>
+      <button class="btn-s btn-accent" data-act="insert" data-text="SOUND ${escAttr(sd.name)}">↳ Insert into rule at cursor</button>
+      <button class="btn-s btn-danger" data-act="delete">🗑 Delete</button>
+    </div>
+    <pre class="snippet full" id="aSnippet">${snippetFor(sd.line)}</pre>
+  </div>`;
+}
+function soundsHTML(p) {
+  const customs = Object.values(p.sounds);
+  const sel = assetUI.sel.sounds;
+  if (sel && !sel.startsWith("builtin:") && !p.sounds[sel]) assetUI.sel.sounds = null;
+  if (!assetUI.sel.sounds) assetUI.sel.sounds = customs[0] ? customs[0].key : "builtin:pickup";
+  return `<div class="asset-section">
+    <h3>Built-in</h3>
+    <div class="list">${SOUNDS.map(s => soundRow("builtin:" + s, s, BUILTIN_SOUND_INFO[s], false)).join("")}</div>
+    <h3>Your sounds <span class="count">${customs.length}</span></h3>
+    <div id="aList">${soundList(p)}</div>
+    <h3>New sound from a preset</h3>
+    <div class="chips">${Object.entries(SOUND_PRESETS).map(([k, s]) => `<button class="chip text-only" data-act="preset" data-k="${k}">${s.label}</button>`).join("")}</div>
+    <div id="aInspector">${soundInspector(p)}</div>
+  </div>`;
+}
+// Pitch-over-time sketch: one stroke per note, sloped by SLIDE, orange for noise.
+function drawWave(c, sd) {
+  const g = c.getContext("2d"), w = c.width, h = c.height;
+  g.clearRect(0, 0, w, h);
+  const total = Math.max(0.01, (sd.notes.length - 1) * sd.step + sd.length);
+  const lo = Math.log2(60), hi = Math.log2(4000);
+  const yOf = f => h - 6 - ((Math.log2(Math.max(60, Math.min(4000, f))) - lo) / (hi - lo)) * (h - 12);
+  g.lineWidth = 5; g.lineCap = "round";
+  g.strokeStyle = sd.wave === "noise" ? "#ff9e64" : "#8b6cff";
+  sd.notes.forEach((f, k) => {
+    const x0 = 6 + ((k * sd.step) / total) * (w - 12), x1 = 6 + ((k * sd.step + sd.length) / total) * (w - 12);
+    g.beginPath(); g.moveTo(x0, yOf(f)); g.lineTo(x1, yOf(f * sd.slide)); g.stroke();
+  });
+}
+function drawAllWaves() {
+  const p = lastResult.program;
+  for (const c of assetBody.querySelectorAll("canvas[data-wave]")) { const sd = p.sounds[c.dataset.wave]; if (sd) drawWave(c, sd); }
+}
+function playKey(key) {
+  if (key.startsWith("builtin:")) { const a = ac(); if (a) SFX[key.slice(8)](a.currentTime + 0.01); }
+  else if (lastResult.program.sounds[key]) playSoundDef(lastResult.program.sounds[key]);
+}
+
+/* ---- UI ---- */
+function themeCard(t, selected) {
+  const s = UI_THEME_STYLES[t], fam = s.font.replace(/^bold \d+px /, "");
+  return `<button class="theme-card${selected ? " selected" : ""}" data-act="theme" data-k="${t}" style="background:${s.stage}">
+    <span class="tname">${s.label}</span>
+    <span class="mini-bubble" style="background:${s.bubbleBg};color:${s.bubbleInk};border-color:${s.bubbleLine};font-family:${fam}">Hi there!</span>
+    <span class="mini-box" style="background:${s.boxBg};color:${s.boxInk};border-color:${s.boxLine};font-family:${fam}">A dialogue box ▼</span>
+  </button>`;
+}
+function promptList(p) {
+  const prompts = Object.values(p.prompts);
+  if (!prompts.length) return `<div class="empty">No dialogue boxes yet.</div>`;
+  return `<div class="list">${prompts.map(pr => `
+    <div class="list-row${assetUI.sel.ui === pr.key ? " selected" : ""}" data-act="select" data-key="${pr.key}" role="button" tabindex="0">
+      <button class="play" data-act="previewprompt" data-key="${pr.key}" title="Preview on the game">▶</button>
+      <span class="name">${escapeHTML(pr.name)}</span><span class="desc">${escapeHTML(pr.text)}</span>
+      <span class="badge">${pr.waitKey ? "WAIT SPACE" : "⏱ " + pr.duration + "s"}</span>
+    </div>`).join("")}</div>`;
+}
+function promptInspector(p) {
+  const pr = p.prompts[assetUI.sel.ui];
+  if (!pr) return "";
+  return `<div class="inspector">
+    <div class="head">💬 <span>${escapeHTML(pr.name)}</span><span class="badge">line ${pr.line}</span></div>
+    ${nameRow("pname", pr.name)}
+    <label>Text</label><textarea data-f="ptext" spellcheck="true">${escapeHTML(pr.text)}</textarea>
+    <label>Closes</label><select data-f="pmode"><option value="wait" ${pr.waitKey ? "selected" : ""}>when the player presses Space (pauses the game)</option><option value="timed" ${pr.waitKey ? "" : "selected"}>by itself after a few seconds</option></select>
+    ${pr.waitKey ? "" : `<label>Duration</label>${rangeRow("pduration", 0.5, 15, 0.5, pr.duration, "")}`}
+    <div class="full btns">
+      <button class="btn-s" data-act="previewprompt" data-key="${pr.key}">▶ Preview</button>
+      <button class="btn-s btn-accent" data-act="insert" data-text="SHOW DIALOGUE ${escAttr(pr.name)}">↳ Insert into rule at cursor</button>
+      <button class="btn-s btn-danger" data-act="delete">🗑 Delete</button>
+    </div>
+    <pre class="snippet full" id="aSnippet">${snippetFor(pr.line)}</pre>
+  </div>`;
+}
+function uiHTML(p) {
+  const prompts = Object.values(p.prompts);
+  if (assetUI.sel.ui && !p.prompts[assetUI.sel.ui]) assetUI.sel.ui = null;
+  if (!assetUI.sel.ui && prompts[0]) assetUI.sel.ui = prompts[0].key;
+  return `<div class="asset-section">
+    <h3>Theme <span class="hint-s" style="text-transform:none;letter-spacing:0">speech bubbles, dialogue boxes, HUD</span></h3>
+    <div class="theme-grid">${UI_THEMES.map(t => themeCard(t, p.uiTheme === t)).join("")}</div>
+    <h3>HUD</h3>
+    <div class="toggles">${HUD_PARTS.map(h => `<label><input type="checkbox" data-f="hud" data-k="${h}" ${p.hud[h.toLowerCase()] ? "checked" : ""}> Show ${h.toLowerCase()}</label>`).join("")}</div>
+    <h3>Dialogue boxes <span class="count">${prompts.length}</span></h3>
+    <div id="aList">${promptList(p)}</div>
+    <div class="btns"><button class="btn-s btn-accent" data-act="newprompt">＋ New dialogue box</button></div>
+    <div id="aInspector">${promptInspector(p)}</div>
+    <h3>Announcement (SAY)</h3>
+    <div class="inspector"><label>Text</label><input type="text" id="sayText" value="Level up!">
+      <div class="full btns"><button class="btn-s" data-act="saypreview">▶ Preview</button><button class="btn-s btn-accent" data-act="sayinsert">↳ Insert into rule at cursor</button></div>
+    </div>
+  </div>`;
+}
+function previewPrompt(pr) {
+  if (!pr) return;
+  if (isModal() && game.state === "PLAYING") { logMessages(lastResult, { type: "warn", text: "A dialogue box is already open in the game. Press Space there first." }); return; }
+  const def = { ...pr, waitKey: false, duration: pr.duration || 3 };
+  game.prompt = { def, cont: null, shown: 0, life: def.duration };
+}
+
+const SECTIONS = {
+  objects: { html: objectsHTML, list: objectsList, line: () => { const e = curEnt(); return e && e.line; } },
+  sounds:  { html: soundsHTML,  list: soundList,   line: () => { const s = curSound(); return s && s.line; } },
+  ui:      { html: uiHTML,      list: promptList,  line: () => { const pr = curPrompt(); return pr && pr.line; } },
+};
+// full: rebuild everything. Otherwise only the list and code snippet, so the
+// control being dragged or typed into keeps its focus.
+function refreshAssets(full) {
+  if (assetsEl.hidden || !lastResult) return;
+  const p = lastResult.program, sec = SECTIONS[assetUI.tab];
+  const list = document.getElementById("aList");
+  if (full || assetBody.dataset.tab !== assetUI.tab || !list) {
+    const scroll = assetsEl.scrollTop;
+    assetBody.dataset.tab = assetUI.tab;
+    assetBody.innerHTML = sec.html(p);
+    assetsEl.scrollTop = scroll;
+  } else {
+    list.innerHTML = sec.list(p);
+    const sn = document.getElementById("aSnippet"), ln = sec.line();
+    if (sn && ln) sn.innerHTML = snippetFor(ln);
+  }
+  drawAllThumbs();
+  drawAllWaves();
+}
+
+/* ---- actions ---- */
+function insertIntoRule(text) {
+  const lines = srcLines();
+  const k = Math.min(lines.length - 1, ta.value.slice(0, lastCaret).split("\n").length - 1);
+  let rule = -1;
+  for (let j = k; j >= 0; j--) {
+    const w = topWords(lines[j]);
+    if (w) { if (["ON", "WHEN"].includes(w[0].toUpperCase())) rule = j; break; }
+  }
+  if (rule < 0) {
+    if (navigator.clipboard) navigator.clipboard.writeText(text).catch(() => {});
+    logMessages(lastResult, { type: "warn", text: `Copied "${text}" to the clipboard. To insert it directly, click inside an ON ... TOUCH or WHEN rule in the Script tab first.` });
+    return;
+  }
+  const { end } = blockRange(lines, rule + 1);
+  let indent = "  ";
+  for (let j = rule + 1; j < end; j++) { const c = stripComment(lines[j]); if (c.trim()) { indent = " ".repeat(measureIndent(c)); break; } }
+  const at = Math.min(Math.max(k + 1, rule + 1), end);       // after the cursor line, but inside the rule
+  lines.splice(at, 0, indent + text);
+  lastCaret = lines.slice(0, at + 1).join("\n").length;
+  commit(lines, { note: `Inserted "${text}" on line ${at + 1}, in the rule on line ${rule + 1}.` });
+}
+function renameAsset(kind, oldName, newName) {
+  if (newName === oldName) return;
+  const p = lastResult.program, key = newName.toLowerCase(), errEl = document.getElementById("nameErr");
+  let problem = "";
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(newName)) problem = "Letters, digits and _ only";
+  else if (NAME_KEYWORDS.has(newName.toUpperCase())) problem = "That's a keyword";
+  else if (key !== oldName.toLowerCase() &&
+    (kind === "sound" ? (p.sounds[key] || SOUNDS.includes(key)) : (p.byName[key] || p.prompts[key]))) problem = "Name already used";
+  if (problem) { if (errEl) errEl.textContent = problem; return; }
+  assetUI.sel[kind === "entity" ? "objects" : kind === "sound" ? "sounds" : "ui"] = key;
+  commit(renameInSource(srcLines(), oldName, newName, kind === "sound"), { full: true, note: `Renamed ${oldName} → ${newName} everywhere in the script.` });
+}
+function changeType(en, type) {
+  editLines(L => {
+    const usedAdd = /^\s*ADD\b/i.test(L[en.line - 1]);
+    L[en.line - 1] = (usedAdd ? `ADD ${type === "PLAYER" ? "CHARACTER" : type}` : type) + " " + en.name;
+    for (const prop of Object.keys(PROPS)) if (!PROPS[prop].includes(type)) setBlockProp(L, en.line, prop, null);
+  }, { full: true, note: `${en.name} is now ${type === "PLAYER" ? "a" : "an"} ${type}.` });
+}
+function addSound(presetKey) {
+  const p = lastResult.program, name = uniqueName(presetKey, n => p.sounds[n] || SOUNDS.includes(n));
+  assetUI.sel.sounds = name;
+  editLines(L => insertBlock(L, soundBlock(name, SOUND_PRESETS[presetKey])), { full: true, note: `Added sound "${name}". Play it from a rule with: SOUND ${name}` });
+  if (lastResult.program.sounds[name]) playSoundDef(lastResult.program.sounds[name]);
+}
+function startPlacing() {
+  const en = curEnt(); if (!en) return;
+  assetUI.placing = en.key;
+  stage.classList.add("placing");
+  logMessages(lastResult, { type: "info", text: `Click anywhere on the game to set where ${en.name} starts (Esc cancels).` });
+}
+function stopPlacing() { assetUI.placing = null; stage.classList.remove("placing"); }
+stage.addEventListener("mousedown", e => {
+  if (!assetUI.placing) return;
+  e.stopImmediatePropagation(); e.preventDefault();
+  const r = canvas.getBoundingClientRect();
+  const x = Math.round(Math.max(0, Math.min(W, ((e.clientX - r.left) / r.width) * W)));
+  const y = Math.round(Math.max(0, Math.min(H, ((e.clientY - r.top) / r.height) * H)));
+  const en = lastResult.program.byName[assetUI.placing];
+  stopPlacing();
+  if (en) editLines(L => setBlockProp(L, en.line, "START", `${x}, ${y}`), { full: true, note: `${en.name} now starts at ${x}, ${y}.` });
+}, true);
+window.addEventListener("keydown", e => { if (e.key === "Escape" && assetUI.placing) stopPlacing(); });
+
+assetBody.addEventListener("click", e => {
+  const el = e.target.closest("[data-act]");
+  if (!el || !assetBody.contains(el)) return;
+  const p = lastResult.program, en = curEnt(), sd = curSound(), pr = curPrompt();
+  switch (el.dataset.act) {
+    case "select":
+      assetUI.sel[assetUI.tab] = el.dataset.key;
+      refreshAssets(true);
+      break;
+    case "template": {
+      const tp = OBJECT_TEMPLATES[+el.dataset.k];
+      const name = uniqueName(tp.base, n => p.byName[n] || p.prompts[n]);
+      assetUI.sel.objects = name;
+      editLines(L => insertBlock(L, templateBlock(tp, name)), { full: true, note: `Added ${tp.type} ${name}. Give it a rule, e.g. ON <player> TOUCH ${name}:` });
+      break;
+    }
+    case "dupe": {
+      if (!en) break;
+      const lines = srcLines(), { start, end } = blockRange(lines, en.line);
+      const name = uniqueName(en.key, n => p.byName[n] || p.prompts[n]);
+      const copy = lines.slice(start, end);
+      copy[0] = copy[0].replace(new RegExp(`${en.name}\\s*$`), name);
+      assetUI.sel.objects = name;
+      commit(insertBlock(lines, copy), { full: true, note: `Duplicated ${en.name} as ${name}.` });
+      break;
+    }
+    case "delete": {
+      const target = assetUI.tab === "objects" ? en : assetUI.tab === "sounds" ? sd : pr;
+      if (!target) break;
+      assetUI.sel[assetUI.tab] = null;
+      editLines(L => removeBlock(L, target.line), { full: true, note: `Deleted ${target.name}. Rules that used it now show errors; ↶ Undo brings it back.` });
+      break;
+    }
+    case "pick": startPlacing(); break;
+    case "clearstart": if (en) editLines(L => setBlockProp(L, en.line, "START", null), { full: true }); break;
+    case "play": e.stopPropagation(); playKey(el.dataset.key); break;
+    case "preset": addSound(el.dataset.k); break;
+    case "insert": insertIntoRule(el.dataset.text); break;
+    case "theme":
+      editLines(L => setTopLine(L, w => w[0].toUpperCase() === "UI_THEME", el.dataset.k === "classic" ? null : `UI_THEME ${el.dataset.k}`), { full: true });
+      applyTheme(el.dataset.k);
+      break;
+    case "newprompt": {
+      const name = uniqueName("message", n => p.byName[n] || p.prompts[n]);
+      assetUI.sel.ui = name;
+      editLines(L => insertBlock(L, [`ADD DIALOGUE ${name}`, `  TEXT "Hello, traveler!"`, `  DURATION 3`]), { full: true, note: `Added dialogue box "${name}". Show it from a rule with: SHOW DIALOGUE ${name}` });
+      break;
+    }
+    case "previewprompt": e.stopPropagation(); previewPrompt(p.prompts[el.dataset.key]); break;
+    case "saypreview": announce(document.getElementById("sayText").value || "…"); break;
+    case "sayinsert": insertIntoRule(`SAY "${(document.getElementById("sayText").value || "Level up!").replace(/"/g, "'")}"`); break;
+  }
+});
+
+// Live controls (sliders, text, color): commit while you drag or type.
+assetBody.addEventListener("input", e => {
+  const el = e.target, f = el.dataset.f;
+  if (!f || el.tagName === "SELECT" || el.type === "checkbox") return;
+  if (el.type === "range") { const o = el.parentElement.querySelector("output"); if (o) o.textContent = el.value; }
+  const en = curEnt(), sd = curSound(), pr = curPrompt();
+  switch (f) {
+    case "size": case "speed":
+      if (en) editLines(L => setBlockProp(L, en.line, f.toUpperCase(), el.value), { field: f }); break;
+    case "count": {
+      const n = +el.value;
+      if (en && Number.isInteger(n) && n >= 1 && n <= 100) editLines(L => setBlockProp(L, en.line, "COUNT", n), { field: f });
+      break;
+    }
+    case "colorpick": {
+      if (!en) break;
+      const txt = assetBody.querySelector('[data-f="color"]'); if (txt) txt.value = el.value;
+      editLines(L => setBlockProp(L, en.line, "COLOR", el.value), { field: "color" });
+      break;
+    }
+    case "notes": {
+      if (!sd) break;
+      const toks = el.value.split(/[\s,]+/).filter(Boolean), bad = toks.find(tk => isNaN(noteFreq(tk)));
+      const hint = document.getElementById("notesHint");
+      const problem = !toks.length ? "Add at least one note" : toks.length > 16 ? "16 notes at most" : bad ? `"${bad}" isn't a note` : "";
+      if (hint) { hint.textContent = problem || "Note names (C5 E5 G5, F#4, Bb3) or Hz. Up to 16."; hint.className = problem ? "field-err" : "hint-s"; }
+      if (!problem) editLines(L => setBlockProp(L, sd.line, "NOTES", toks.join(" ")), { field: f });
+      break;
+    }
+    case "step": case "length": case "slide": case "volume":
+      if (sd) editLines(L => setBlockProp(L, sd.line, f.toUpperCase(), f === "slide" && +el.value === 1 ? null : el.value), { field: f }); break;
+    case "ptext":
+      if (pr) editLines(L => setBlockProp(L, pr.line, "TEXT", `"${el.value.replace(/"/g, "'").replace(/\s*\n\s*/g, " ")}"`), { field: f }); break;
+    case "pduration":
+      if (pr) editLines(L => setBlockProp(L, pr.line, "DURATION", el.value), { field: f }); break;
+  }
+});
+
+// Discrete controls (selects, checkboxes, names): commit on change.
+assetBody.addEventListener("change", e => {
+  const el = e.target, f = el.dataset.f;
+  if (!f) return;
+  const p = lastResult.program, en = curEnt(), sd = curSound(), pr = curPrompt();
+  switch (f) {
+    case "name": if (en) renameAsset("entity", en.name, el.value.trim()); break;
+    case "sname": if (sd) renameAsset("sound", sd.name, el.value.trim()); break;
+    case "pname": if (pr) renameAsset("prompt", pr.name, el.value.trim()); break;
+    case "color": {
+      const v = el.value.trim();
+      if (en && isColor(v)) editLines(L => setBlockProp(L, en.line, "COLOR", v), { full: true });
+      else if (en) el.style.borderColor = "var(--err)";
+      break;
+    }
+    case "startx": case "starty": {
+      if (!en) break;
+      const xs = assetBody.querySelector('[data-f="startx"]').value, ys = assetBody.querySelector('[data-f="starty"]').value;
+      if (xs === "" && ys === "") editLines(L => setBlockProp(L, en.line, "START", null), { full: true });
+      else if (xs !== "" && ys !== "") editLines(L => setBlockProp(L, en.line, "START", `${Math.round(+xs)}, ${Math.round(+ys)}`), { full: true });
+      break;
+    }
+    case "type": if (en) changeType(en, el.value); break;
+    case "shape": if (en) editLines(L => setBlockProp(L, en.line, "SHAPE", el.value || null), { full: true }); break;
+    case "controls": if (en) editLines(L => setBlockProp(L, en.line, "CONTROLS", el.value === "both" ? null : el.value)); break;
+    case "ai": {
+      if (!en) break;
+      let val = "wander";
+      if (el.value === "none") val = DEFAULTS[en.type].ai ? "none" : null;
+      else if (el.value === "chase") {
+        const tgt = p.entities.find(o => o.type === "PLAYER" && o !== en) || p.entities.find(o => o !== en);
+        val = "chase" + (tgt ? " " + tgt.name : "");
+      }
+      editLines(L => setBlockProp(L, en.line, "AI", val), { full: true });
+      break;
+    }
+    case "aitarget": { const tgt = p.byName[el.value]; if (en && tgt) editLines(L => setBlockProp(L, en.line, "AI", "chase " + tgt.name)); break; }
+    case "respawn": if (en) editLines(L => setBlockProp(L, en.line, "RESPAWN", el.checked ? true : null)); break;
+    case "wave": if (sd) { editLines(L => setBlockProp(L, sd.line, "WAVE", el.value)); playKey(sd.key); } break;
+    case "step": case "length": case "slide": case "volume": case "notes": if (sd) playKey(sd.key); break;   // hear it on release
+    case "pmode":
+      if (pr) editLines(L => {
+        if (el.value === "wait") { setBlockProp(L, pr.line, "DURATION", null); setBlockProp(L, pr.line, "WAIT_FOR_KEY", "space"); }
+        else { setBlockProp(L, pr.line, "WAIT_FOR_KEY", null); setBlockProp(L, pr.line, "DURATION", pr.duration || 3); }
+      }, { full: true });
+      break;
+    case "hud":
+      editLines(L => setTopLine(L, w => w[0].toUpperCase() === "HUD" && (w[1] || "").toUpperCase() === el.dataset.k, el.checked ? null : `HUD ${el.dataset.k} OFF`));
+      break;
+  }
+});
+
+/* ============================================ 3.10 BOOT + SELF-TEST */
 function selfTest() {
   // Open index.html?selftest to run: compiles every demo, checks error
   // messages for typical mistakes, and simulates each demo headlessly.
@@ -2215,7 +3215,74 @@ function selfTest() {
     waitKey: "ADD CHARACTER Hero\nADD PROMPT p\n  TEXT \"x\"\n  WAIT_FOR_KEY enter",
     loseTypo: "ADD CHARACTER Hero\nITEM c\nON Hero TOUCH c:\n  LOSE LIIFE",
     promptProp: "ADD CHARACTER Hero\nADD PROMPT p\n  TXET \"x\"",
+    shapeTypo: "PLAYER hero\n  SHAPE stra",
+    waveTypo: "PLAYER hero\nADD SOUND zap\n  WAVE sqare",
+    badNote: "PLAYER hero\nADD SOUND zap\n  NOTES C5 H2",
+    customSoundTypo: "PLAYER hero\nADD SOUND zap\n  NOTES C5\nITEM c\nON hero TOUCH c:\n  SOUND zapp",
+    themeTypo: "PLAYER hero\nUI_THEME neom",
+    hudTypo: "PLAYER hero\nHUD SCOR OFF",
   };
+  // Asset-panel script edits: each step must leave a script that still compiles cleanly.
+  try {
+    let L = DEMOS.quest.split("\n");
+    const steps = {};
+    const check = (label, test) => { const r = compile(L.join("\n")); steps[label] = r.errors.length ? r.errors.map(x => x.msg) : test(r.program) ? "ok" : "FAILED"; if (steps[label] !== "ok") out.ok = false; };
+    insertBlock(L, templateBlock(OBJECT_TEMPLATES.find(tp => tp.label === "Ghost"), "ghost"));
+    check("addTemplate", p => p.byName.ghost && p.byName.ghost.shape === "ghost");
+    // Like the panel, recompile between edits: inserting a line shifts every block below it.
+    const lineOf = key => compile(L.join("\n")).program.byName[key].line;
+    setBlockProp(L, lineOf("hero"), "SHAPE", "star");
+    setBlockProp(L, lineOf("ghost"), "SIZE", 30);
+    setBlockProp(L, lineOf("gem"), "RESPAWN", null);
+    let r;
+    check("setProps", p => p.byName.hero.shape === "star" && p.byName.ghost.size === 30 && !p.byName.gem.respawn);
+    insertBlock(L, soundBlock("laser", SOUND_PRESETS.laser));
+    check("addSound", p => p.sounds.laser && p.sounds.laser.slide === 0.15);
+    L = renameInSource(L, "Elder", "Sage", false);
+    check("rename", p => p.byName.sage && !p.byName.elder && L.some(l => l.includes("Walk up to the Elder")));
+    setTopLine(L, w => w[0].toUpperCase() === "UI_THEME", "UI_THEME neon");
+    setTopLine(L, w => w[0].toUpperCase() === "HUD" && (w[1] || "").toUpperCase() === "TITLE", "HUD TITLE OFF");
+    check("uiLines", p => p.uiTheme === "neon" && p.hud.title === false && p.hud.score === true);
+    r = compile(L.join("\n"));
+    removeBlock(L, r.program.byName.ghost.line);
+    check("removeBlock", p => !p.byName.ghost);
+    // Render every panel tab once to catch runtime errors in the UI code.
+    showPanel("assets");
+    for (const tab of ["objects", "sounds", "ui"]) { assetUI.tab = tab; refreshAssets(true); }
+    steps.panelRender = assetBody.querySelectorAll("canvas[data-thumb], .list-row, .theme-card").length > 0 ? "ok" : "FAILED";
+    // Drive the real controls with synthetic events, the way a user would.
+    loadDemo("quest", true);
+    const fire = (sel, type, value) => {
+      const el = assetBody.querySelector(sel);
+      if (!el) throw new Error("missing control " + sel);
+      if (value !== undefined) { if (el.type === "checkbox") el.checked = value; else el.value = value; }
+      if (type === "click") el.click(); else el.dispatchEvent(new Event(type, { bubbles: true }));
+    };
+    const ui = (label, test) => { steps[label] = test() ? "ok" : "FAILED"; if (steps[label] !== "ok") out.ok = false; };
+    assetUI.tab = "objects"; refreshAssets(true);
+    fire('[data-f="size"]', "input", "40");
+    fire('[data-f="shape"]', "change", "star");
+    ui("uiObjectEdit", () => /ADD CHARACTER Hero[\s\S]*SIZE 40[\s\S]*SHAPE star/.test(ta.value) && game.program.byName.hero.size === 40);
+    fire('[data-act="template"][data-k="7"]', "click");
+    ui("uiTemplate", () => lastResult.program.byName.ghost && !lastResult.errors.length && assetUI.sel.objects === "ghost");
+    fire('[data-f="name"]', "change", "Spooky");
+    ui("uiRename", () => lastResult.program.byName.spooky && !lastResult.errors.length);
+    assetUI.history.length && assetUndoBtn.click();
+    ui("uiUndo", () => lastResult.program.byName.ghost && !lastResult.program.byName.spooky);
+    assetUI.tab = "sounds"; refreshAssets(true);
+    fire('[data-act="preset"][data-k="laser"]', "click");
+    fire('[data-f="volume"]', "input", "70");
+    ui("uiSound", () => lastResult.program.sounds.laser && lastResult.program.sounds.laser.volume === 70);
+    assetUI.tab = "ui"; refreshAssets(true);
+    fire('[data-act="theme"][data-k="neon"]', "click");
+    fire('[data-f="hud"][data-k="TITLE"]', "change", false);
+    fire('[data-act="newprompt"]', "click");
+    fire('[data-f="ptext"]', "input", 'Say "hi"');
+    ui("uiUI", () => /UI_THEME neon/.test(ta.value) && /HUD TITLE OFF/.test(ta.value) && stage.dataset.ui === "neon" &&
+      lastResult.program.prompts.message && lastResult.program.prompts.message.text === "Say 'hi'" && !lastResult.errors.length);
+    showPanel("script"); assetUI.tab = "objects";
+    out.assets = steps;
+  } catch (ex) { out.ok = false; out.assets = "EXCEPTION: " + ex.message + " " + (ex.stack || "").split("\n")[1]; }
   for (const [k, src] of Object.entries(cases)) {
     const r = compile(src);
     out.errors[k] = r.errors.map(e => `Error on line ${e.line}: ${e.msg}`);
@@ -2228,6 +3295,14 @@ function selfTest() {
 loadDemo("quest", true);
 requestAnimationFrame(frame);
 if (/[?&]selftest\b/.test(location.search)) { selfTest(); loadDemo("quest", true); }
+// ?assets=objects|sounds|ui opens the Assets panel on that tab (handy for screenshots).
+{
+  const m = location.search.match(/[?&]assets(?:=(\w+))?/);
+  if (m) {
+    if (SECTIONS[m[1]]) { assetUI.tab = m[1]; document.querySelectorAll(".atab").forEach(x => x.classList.toggle("active", x.dataset.atab === m[1])); }
+    showPanel("assets");
+  }
+}
 // ?preview stages a dialogue scene (handy for screenshots): bubbles + a dialogue box.
 if (/[?&]preview\b/.test(location.search)) {
   startPlaying(); advancePrompt(true);
